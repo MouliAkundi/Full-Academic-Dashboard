@@ -860,6 +860,8 @@ function loadSemesters() {
 
 /* CLASSES */
 
+/* CLASSES */
+
 function loadClasses() {
 
   const select =
@@ -871,18 +873,27 @@ function loadClasses() {
   const semester =
     document.getElementById("ttSemester").value;
 
+
   select.innerHTML =
     '<option value="">Select Class</option>';
 
-  document.getElementById("timetableContainer").innerHTML =
-    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
 
-  document.getElementById("timetableSaveArea").style.display =
-    "none";
+  if (!academicYear || !semester) {
+    return;
+  }
 
-  if (!academicYear || !semester) return;
+
+  /*
+   * Master Classes contains one row per student.
+   * Therefore, the same Class ID appears many times.
+   * We use a Map to keep only one unique class.
+   *
+   * KEY   = Class ID
+   * VALUE = Class Name
+   */
 
   const uniqueClasses = new Map();
+
 
   classesData.forEach(row => {
 
@@ -894,40 +905,48 @@ function loadClasses() {
         String(semester).trim()
     ) {
 
-      const classId = row["Class ID"];
-
-      if (classId == null || String(classId).trim() === "") {
-        return;
-      }
+      const classId =
+        String(row["Class ID"] || "").trim();
 
       const className =
-        row["Class Name"] ||
-        row["Class"] ||
-        row["Display Name"] ||
-        row["Class Display Name"] ||
-        classId;
+        String(row["Class Name"] || "").trim();
 
-      if (!uniqueClasses.has(String(classId))) {
+
+      if (
+        classId &&
+        className &&
+        !uniqueClasses.has(classId)
+      ) {
+
         uniqueClasses.set(
-          String(classId),
-          String(className)
+          classId,
+          className
         );
+
       }
 
     }
 
   });
 
-  uniqueClasses.forEach((className, classId) => {
 
-    select.innerHTML +=
-      `<option value="${classId}">${className}</option>`;
+  /*
+   * Display Class Name
+   * Store Class ID as the value
+   */
 
-  });
+  uniqueClasses.forEach(
+    (className, classId) => {
+
+      select.innerHTML +=
+        `<option value="${classId}">
+          ${className}
+        </option>`;
+
+    }
+  );
 
 }
-
-
 /* PREPARE TIMETABLE */
 
 async function prepareTimetable() {

@@ -862,6 +862,8 @@ function loadSemesters() {
 
 /* CLASSES */
 
+/* CLASSES */
+
 function loadClasses() {
 
   const select =
@@ -883,44 +885,39 @@ function loadClasses() {
   }
 
 
-  /*
-   * Master Classes contains one row per student.
-   * Therefore, the same Class ID appears many times.
-   * We use a Map to keep only one unique class.
-   *
-   * KEY   = Class ID
-   * VALUE = Class Name
-   */
-
   const uniqueClasses = new Map();
 
 
   classesData.forEach(row => {
 
     if (
+
       String(row["Academic Year"]).trim() ===
-        String(academicYear).trim() &&
+      String(academicYear).trim()
+
+      &&
 
       String(row["Semester"]).trim() ===
-        String(semester).trim()
+      String(semester).trim()
+
     ) {
 
       const classId =
-        String(row["Class ID"] || "").trim();
+        row["Class ID"];
 
       const className =
-        String(row["Class Name"] || "").trim();
+        row["Class Name"];
 
 
       if (
         classId &&
         className &&
-        !uniqueClasses.has(classId)
+        !uniqueClasses.has(String(classId))
       ) {
 
         uniqueClasses.set(
-          classId,
-          className
+          String(classId),
+          String(className)
         );
 
       }
@@ -930,7 +927,18 @@ function loadClasses() {
   });
 
 
-  /*
+  uniqueClasses.forEach(
+    (className, classId) => {
+
+      select.innerHTML +=
+        `<option value="${classId}">
+          ${className}
+        </option>`;
+
+    }
+  );
+
+}  /*
    * Display Class Name
    * Store Class ID as the value
    */
@@ -1337,19 +1345,49 @@ async function saveTimetable() {
    TIMETABLE SELECTOR EVENTS
 ======================================== */
 
-document.getElementById("ttAcademicYear")
+document
+  .getElementById("ttAcademicYear")
   .addEventListener("change", function() {
+
     loadSemesters();
+
+    document.getElementById("ttClass").innerHTML =
+      '<option value="">Select Class</option>';
+
+    document.getElementById(
+      "timetableContainer"
+    ).innerHTML = "";
+
+    document.getElementById(
+      "timetableSaveArea"
+    ).style.display = "none";
+
   });
 
-document.getElementById("ttSemester")
+
+document
+  .getElementById("ttSemester")
   .addEventListener("change", function() {
+
     loadClasses();
+
+    document.getElementById(
+      "timetableContainer"
+    ).innerHTML = "";
+
+    document.getElementById(
+      "timetableSaveArea"
+    ).style.display = "none";
+
   });
 
-document.getElementById("ttClass")
+
+document
+  .getElementById("ttClass")
   .addEventListener("change", function() {
+
     prepareTimetable();
+
   });
 
 </script>

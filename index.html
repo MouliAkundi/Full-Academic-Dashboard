@@ -679,9 +679,12 @@ let currentSubjects = [];
 async function showTimetable() {
 
   document.querySelector(".main-container").style.display = "none";
+  document.getElementById("timetableModule").style.display = "block";
 
-  document.getElementById("timetableModule")
-    .style.display = "block";
+  document.getElementById("timetableContainer").innerHTML =
+    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
+
+  document.getElementById("timetableSaveArea").style.display = "none";
 
   await loadTimetableSelectors();
 
@@ -707,42 +710,57 @@ async function loadTimetableSelectors() {
 
   try {
 
-    const [
-      classesResponse,
-      semestersResponse,
-      periodsResponse
-    ] = await Promise.all([
+    const [classesResponse, semestersResponse, periodsResponse] =
+      await Promise.all([
+        fetch(API_URL + "?action=classes"),
+        fetch(API_URL + "?action=semesters"),
+        fetch(API_URL + "?action=periods")
+      ]);
 
-      fetch(API_URL + "?action=classes"),
-      fetch(API_URL + "?action=semesters"),
-      fetch(API_URL + "?action=periods")
+    const [classesResult, semestersResult, periodsResult] =
+      await Promise.all([
+        classesResponse.json(),
+        semestersResponse.json(),
+        periodsResponse.json()
+      ]);
 
-    ]);
+    if (
+      !classesResult.success ||
+      !semestersResult.success ||
+      !periodsResult.success
+    ) {
+      throw new Error(
+        classesResult.error ||
+        semestersResult.error ||
+        periodsResult.error ||
+        "Unable to load timetable configuration."
+      );
+    }
 
+    classesData = Array.isArray(classesResult.data)
+      ? classesResult.data : [];
 
-    const classesResult =
-      await classesResponse.json();
+    semestersData = Array.isArray(semestersResult.data)
+      ? semestersResult.data : [];
 
-    const semestersResult =
-      await semestersResponse.json();
-
-    const periodsResult =
-      await periodsResponse.json();
-
-
-    classesData = classesResult.data;
-    semestersData = semestersResult.data;
-    periodsData = periodsResult.data;
-
+    periodsData = Array.isArray(periodsResult.data)
+      ? periodsResult.data : [];
 
     loadAcademicYears();
+
+    document.getElementById("ttSemester").innerHTML =
+      '<option value="">Select Semester</option>';
+
+    document.getElementById("ttClass").innerHTML =
+      '<option value="">Select Class</option>';
 
   } catch (error) {
 
     console.error(error);
 
     alert(
-      "Unable to load timetable configuration."
+      "Unable to load timetable configuration: " +
+      error.message
     );
 
   }
@@ -760,30 +778,27 @@ function loadAcademicYears() {
   select.innerHTML =
     '<option value="">Select Academic Year</option>';
 
-
   const years = new Set();
 
   semestersData.forEach(row => {
 
-    if (row["Academic Year"]) {
+    const year = row["Academic Year"];
 
-      years.add(
-        row["Academic Year"]
-      );
-
+    if (year !== "" && year != null) {
+      years.add(String(year));
     }
 
   });
 
+  [...years]
+    .sort()
+    .reverse()
+    .forEach(year => {
 
-  years.forEach(year => {
+      select.innerHTML +=
+        `<option value="${year}">${year}</option>`;
 
-    select.innerHTML +=
-      `<option value="${year}">
-        ${year}
-      </option>`;
-
-  });
+    });
 
 }
 
@@ -804,13 +819,21 @@ function loadSemesters() {
   document.getElementById("ttClass").innerHTML =
     '<option value="">Select Class</option>';
 
+  document.getElementById("timetableContainer").innerHTML =
+    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
+
+  document.getElementById("timetableSaveArea").style.display =
+    "none";
+
+  if (!academicYear) return;
+
   const semesters = new Set();
 
   semestersData.forEach(row => {
 
     if (
-      String(row["Academic Year"]) ===
-      String(academicYear)
+      String(row["Academic Year"]).trim() ===
+      String(academicYear).trim()
     ) {
 
       const semester = row["Semester"];
@@ -828,13 +851,14 @@ function loadSemesters() {
     .forEach(semester => {
 
       select.innerHTML +=
-        `<option value="${semester}">
-          ${semester}
-        </option>`;
+        `<option value="${semester}">${semester}</option>`;
 
     });
 
-}/* CLASSES */
+}
+
+
+/* CLASSES */
 
 function loadClasses() {
 
@@ -850,34 +874,44 @@ function loadClasses() {
   select.innerHTML =
     '<option value="">Select Class</option>';
 
-  if (!academicYear || !semester) {
-    return;
-  }
+  document.getElementById("timetableContainer").innerHTML =
+    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
+
+  document.getElementById("timetableSaveArea").style.display =
+    "none";
+
+  if (!academicYear || !semester) return;
 
   const uniqueClasses = new Map();
 
   classesData.forEach(row => {
 
     if (
-      String(row["Academic Year"]) ===
-        String(academicYear) &&
+      String(row["Academic Year"]).trim() ===
+        String(academicYear).trim() &&
 
-      String(row["Semester"]) ===
-        String(semester)
+      String(row["Semester"]).trim() ===
+        String(semester).trim()
     ) {
 
       const classId = row["Class ID"];
 
-      if (
-        classId &&
-        !uniqueClasses.has(String(classId))
-      ) {
+      if (classId == null || String(classId).trim() === "") {
+        return;
+      }
 
+      const className =
+        row["Class Name"] ||
+        row["Class"] ||
+        row["Display Name"] ||
+        row["Class Display Name"] ||
+        classId;
+
+      if (!uniqueClasses.has(String(classId))) {
         uniqueClasses.set(
           String(classId),
-          String(classId)
+          String(className)
         );
-
       }
 
     }
@@ -887,13 +921,13 @@ function loadClasses() {
   uniqueClasses.forEach((className, classId) => {
 
     select.innerHTML +=
-      `<option value="${classId}">
-        ${className}
-      </option>`;
+      `<option value="${classId}">${className}</option>`;
 
   });
 
 }
+
+
 /* PREPARE TIMETABLE */
 
 async function prepareTimetable() {
@@ -1127,9 +1161,15 @@ async function saveTimetable() {
   const selectedClass =
     classesData.find(
       row =>
-        String(row["Class ID"]) ===
-        String(classId)
-    );
+        String(row["Academic Year"]).trim() ===
+          String(academicYear).trim() &&
+
+        String(row["Semester"]).trim() ===
+          String(semester).trim() &&
+
+        String(row["Class ID"]).trim() ===
+          String(classId).trim()
+    ) || {};
 
 
   const entries = [];
@@ -1273,6 +1313,26 @@ async function saveTimetable() {
   }
 
 }
+
+/* ========================================
+   TIMETABLE SELECTOR EVENTS
+======================================== */
+
+document.getElementById("ttAcademicYear")
+  .addEventListener("change", function() {
+    loadSemesters();
+  });
+
+document.getElementById("ttSemester")
+  .addEventListener("change", function() {
+    loadClasses();
+  });
+
+document.getElementById("ttClass")
+  .addEventListener("change", function() {
+    prepareTimetable();
+  });
+
 </script>
 
 </body>

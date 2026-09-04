@@ -535,6 +535,141 @@ body {
 <div class="status" id="status">
   Connecting to Academic Records Backend...
 </div>
+
+
+<script>
+
+/* ========================================
+   GOOGLE APPS SCRIPT API
+======================================== */
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec";
+
+
+/* ========================================
+   LOAD CONFIGURATION
+======================================== */
+
+async function loadConfig() {
+
+  try {
+
+    const response = await fetch(
+      API_URL + "?action=config"
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    const config = {};
+
+    result.data.forEach(row => {
+
+      config[row.Setting] = row.Value;
+
+    });
+
+
+    /* INSTITUTION DETAILS */
+
+    document.getElementById("institutionName").textContent =
+      config["Institution Name"] || "";
+
+    document.getElementById("institutionAddress").textContent =
+      config["Institution Address"] || "";
+
+    document.getElementById("commissionerateName").textContent =
+      config["Commissionerate / Department Name"] || "";
+
+
+    /* LOGOS */
+
+    if (config["Logo 1 URL"]) {
+
+      document.getElementById("logo1").src =
+        config["Logo 1 URL"];
+
+    }
+
+    if (config["Logo 2 URL"]) {
+
+      document.getElementById("logo2").src =
+        config["Logo 2 URL"];
+
+    }
+
+
+    document.getElementById("status").textContent =
+      "Academic Records Backend connected successfully.";
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    document.getElementById("status").textContent =
+      "Unable to connect to Academic Records Backend.";
+
+  }
+
+}
+
+
+/* ========================================
+   QUICK LINKS
+======================================== */
+
+function openLink(type) {
+
+  const links = {
+
+    website: "",
+    profile: "",
+    learning: ""
+
+  };
+
+
+  if (!links[type]) {
+
+    alert("This link has not been configured yet.");
+
+    return;
+
+  }
+
+  window.open(
+    links[type],
+    "_blank"
+  );
+
+}
+
+
+/* ========================================
+   MODULE PLACEHOLDERS
+======================================== */
+
+function openModule(module) {
+
+  alert(
+    module.replace("-", " ").toUpperCase() +
+    " module will be added next."
+  );
+
+}
+
+
+/* ========================================
+   START APP
+======================================== */
+
+loadConfig();
 /* ========================================
    TIMETABLE MODULE
 ======================================== */
@@ -1122,141 +1257,6 @@ async function saveTimetable() {
   }
 
 }
-
-<script>
-
-/* ========================================
-   GOOGLE APPS SCRIPT API
-======================================== */
-
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec";
-
-
-/* ========================================
-   LOAD CONFIGURATION
-======================================== */
-
-async function loadConfig() {
-
-  try {
-
-    const response = await fetch(
-      API_URL + "?action=config"
-    );
-
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    const config = {};
-
-    result.data.forEach(row => {
-
-      config[row.Setting] = row.Value;
-
-    });
-
-
-    /* INSTITUTION DETAILS */
-
-    document.getElementById("institutionName").textContent =
-      config["Institution Name"] || "";
-
-    document.getElementById("institutionAddress").textContent =
-      config["Institution Address"] || "";
-
-    document.getElementById("commissionerateName").textContent =
-      config["Commissionerate / Department Name"] || "";
-
-
-    /* LOGOS */
-
-    if (config["Logo 1 URL"]) {
-
-      document.getElementById("logo1").src =
-        config["Logo 1 URL"];
-
-    }
-
-    if (config["Logo 2 URL"]) {
-
-      document.getElementById("logo2").src =
-        config["Logo 2 URL"];
-
-    }
-
-
-    document.getElementById("status").textContent =
-      "Academic Records Backend connected successfully.";
-
-  }
-
-  catch (error) {
-
-    console.error(error);
-
-    document.getElementById("status").textContent =
-      "Unable to connect to Academic Records Backend.";
-
-  }
-
-}
-
-
-/* ========================================
-   QUICK LINKS
-======================================== */
-
-function openLink(type) {
-
-  const links = {
-
-    website: "",
-    profile: "",
-    learning: ""
-
-  };
-
-
-  if (!links[type]) {
-
-    alert("This link has not been configured yet.");
-
-    return;
-
-  }
-
-  window.open(
-    links[type],
-    "_blank"
-  );
-
-}
-
-
-/* ========================================
-   MODULE PLACEHOLDERS
-======================================== */
-
-function openModule(module) {
-
-  alert(
-    module.replace("-", " ").toUpperCase() +
-    " module will be added next."
-  );
-
-}
-
-
-/* ========================================
-   START APP
-======================================== */
-
-loadConfig();
-
 </script>
 
 </body>

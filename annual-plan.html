@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>Annual Curricular Plan</title>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+
+  margin: 0;
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  background: #f5f6f8;
+
+  color: #222;
+
+}
+
+
+.container {
+
+  max-width: 1400px;
+
+  margin: auto;
+
+  padding: 20px;
+
+}
+
+
+/* =====================================
+   HEADER
+===================================== */
+
+.header {
+
+  background: white;
+
+  padding: 20px;
+
+  border-radius: 12px;
+
+  margin-bottom: 20px;
+
+  box-shadow:
+    0 2px 8px
+    rgba(0,0,0,0.08);
+
+}
+
+
+.header h1 {
+
+  margin: 0;
+
+  text-align: center;
+
+  font-size: 24px;
+
+}
+
+
+/* =====================================
+   CARD
+===================================== */
+
+.card {
+
+  background: white;
+
+  padding: 20px;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 2px 8px
+    rgba(0,0,0,0.08);
+
+  margin-bottom: 20px;
+
+}
+
+
+/* =====================================
+   FORM
+===================================== */
+
+.selector-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 15px;
+
+}
+
+
+.form-group {
+
+  display: flex;
+
+  flex-direction: column;
+
+}
+
+
+label {
+
+  margin-bottom: 6px;
+
+  font-weight: bold;
+
+}
+
+
+select {
+
+  padding: 10px;
+
+  border:
+
+    1px solid
+    #ccc;
+
+  border-radius: 6px;
+
+  font-size: 15px;
+
+}
+
+
+.button-area {
+
+  text-align: center;
+
+  margin-top: 20px;
+
+}
+
+
+button {
+
+  padding:
+    11px 22px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  font-size: 15px;
+
+  background: #1a73e8;
+
+  color: white;
+
+}
+
+
+button:hover {
+
+  opacity: 0.9;
+
+}
+
+
+button:disabled {
+
+  opacity: 0.6;
+
+  cursor: not-allowed;
+
+}
+
+
+/* =====================================
+   PLAN HEADER
+===================================== */
+
+.plan-info {
+
+  margin-bottom: 20px;
+
+  line-height: 1.8;
+
+}
+
+
+/* =====================================
+   TABLE
+===================================== */
+
+.table-wrapper {
+
+  overflow-x: auto;
+
+}
+
+
+table {
+
+  width: 100%;
+
+  border-collapse: collapse;
+
+  min-width: 1400px;
+
+}
+
+
+th {
+
+  background: #f0f2f5;
+
+  padding: 10px;
+
+  border:
+
+    1px solid
+    #ddd;
+
+  text-align: center;
+
+}
+
+
+td {
+
+  padding: 6px;
+
+  border:
+
+    1px solid
+    #ddd;
+
+  vertical-align: top;
+
+}
+
+
+input,
+textarea {
+
+  width: 100%;
+
+  padding: 7px;
+
+  border:
+
+    1px solid
+    #ccc;
+
+  border-radius: 4px;
+
+  font-size: 14px;
+
+}
+
+
+textarea {
+
+  min-height: 70px;
+
+  resize: vertical;
+
+}
+
+
+.action-buttons {
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  margin-top: 20px;
+
+}
+
+
+.secondary {
+
+  background: #555;
+
+}
+
+
+/* =====================================
+   MOBILE
+===================================== */
+
+@media
+(max-width: 800px) {
+
+  .selector-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .container {
+
+    padding: 12px;
+
+  }
+
+
+  .header h1 {
+
+    font-size: 20px;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+  <!-- HEADER -->
+
+  <div class="header">
+
+    <h1>
+      Annual Curricular Plan
+    </h1>
+
+  </div>
+
+
+
+  <!-- SELECTORS -->
+
+  <div class="card">
+
+    <div
+      class="selector-grid"
+    >
+
+
+      <div
+        class="form-group"
+      >
+
+        <label>
+          Academic Year
+        </label>
+
+        <select
+          id="academicYear"
+        >
+
+          <option value="">
+            Select Academic Year
+          </option>
+
+        </select>
+
+      </div>
+
+
+
+      <div
+        class="form-group"
+      >
+
+        <label>
+          Semester
+        </label>
+
+        <select
+          id="semester"
+        >
+
+          <option value="">
+            Select Semester
+          </option>
+
+        </select>
+
+      </div>
+
+
+
+      <div
+        class="form-group"
+      >
+
+        <label>
+          Class
+        </label>
+
+        <select
+          id="classId"
+        >
+
+          <option value="">
+            Select Class
+          </option>
+
+        </select>
+
+      </div>
+
+
+
+      <div
+        class="form-group"
+      >
+
+        <label>
+          Subject
+        </label>
+
+        <select
+          id="subjectId"
+        >
+
+          <option value="">
+            Select Subject
+          </option>
+
+        </select>
+
+      </div>
+
+
+    </div>
+
+
+    <div
+      class="button-area"
+    >
+
+      <button
+        id="loadButton"
+      >
+
+        Load Plan
+
+      </button>
+
+    </div>
+
+
+  </div>
+
+
+
+  <!-- PLAN -->
+
+  <div
+    class="card"
+    id="planArea"
+    style="display:none"
+  >
+
+
+    <div
+      class="plan-info"
+    >
+
+      <strong>
+        Class:
+      </strong>
+
+      <span
+        id="displayClass"
+      ></span>
+
+      <br>
+
+
+      <strong>
+        Semester:
+      </strong>
+
+      <span
+        id="displaySemester"
+      ></span>
+
+      <br>
+
+
+      <strong>
+        Subject:
+      </strong>
+
+      <span
+        id="displaySubject"
+      ></span>
+
+    </div>
+
+
+
+    <div
+      class="table-wrapper"
+    >
+
+      <table
+        id="planTable"
+      >
+
+      </table>
+
+    </div>
+
+
+
+    <div
+      class="action-buttons"
+    >
+
+      <button
+        id="saveButton"
+      >
+
+        Save Plan
+
+      </button>
+
+
+      <button
+        class="secondary"
+        onclick="window.print()"
+      >
+
+        Print Plan
+
+      </button>
+
+
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
+<script>
+
+/* =====================================
+   API URL
+===================================== */
+
+const API_URL =
+  'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+
+/* =====================================
+   DATA
+===================================== */
+
+let classesData = [];
+let semestersData = [];
+let currentSubjects = [];
+
+let currentPlan = null;
+
+
+/* =====================================
+   API GET
+===================================== */
+
+async function apiGet(action, params = {}) {
+
+  const query =
+    new URLSearchParams({
+
+      action,
+      ...params
+
+    });
+
+
+  const response =
+    await fetch(
+
+      API_URL +
+      '?' +
+      query.toString()
+
+    );
+
+
+  const result =
+    await response.json();
+
+
+  if (!result.success) {
+
+    throw new Error(
+      result.error ||
+      'API error'
+    );
+
+  }
+
+
+  return result.data;
+
+}
+
+
+/* =====================================
+   API POST
+===================================== */
+
+async function apiPost(data) {
+
+  const response =
+    await fetch(
+      API_URL,
+      {
+
+        method:
+          'POST',
+
+        headers: {
+
+          'Content-Type':
+            'text/plain;charset=utf-8'
+
+        },
+
+        body:
+          JSON.stringify(data)
+
+      }
+    );
+
+
+  const result =
+    await response.json();
+
+
+  if (!result.success) {
+
+    throw new Error(
+      result.error ||
+      'API error'
+    );
+
+  }
+
+
+  return result.data;
+
+}
+
+
+/* =====================================
+   LOAD INITIAL DATA
+===================================== */
+
+async function loadInitialData() {
+
+  try {
+
+    const [
+
+      classes,
+      semesters
+
+    ] =
+      await Promise.all([
+
+        apiGet('classes'),
+
+        apiGet('semesters')
+
+      ]);
+
+
+    classesData =
+      classes;
+
+
+    semestersData =
+      semesters;
+
+
+    loadAcademicYears();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      'Unable to load configuration.'
+    );
+
+  }
+
+}
+
+
+/* =====================================
+   ACADEMIC YEARS
+===================================== */
+
+function loadAcademicYears() {
+
+  const select =
+    document.getElementById(
+      'academicYear'
+    );
+
+
+  select.innerHTML =
+    '<option value="">Select Academic Year</option>';
+
+
+  const years =
+    new Set();
+
+
+  semestersData.forEach(row => {
+
+    if (
+      row['Academic Year']
+    ) {
+
+      years.add(
+        String(
+          row['Academic Year']
+        )
+      );
+
+    }
+
+  });
+
+
+  years.forEach(year => {
+
+    select.innerHTML +=
+      `<option value="${year}">
+        ${year}
+      </option>`;
+
+  });
+
+}
+
+
+/* =====================================
+   SEMESTERS
+===================================== */
+
+function loadSemesters() {
+
+  const academicYear =
+    document.getElementById(
+      'academicYear'
+    ).value;
+
+
+  const select =
+    document.getElementById(
+      'semester'
+    );
+
+
+  select.innerHTML =
+    '<option value="">Select Semester</option>';
+
+
+  document.getElementById(
+    'classId'
+  ).innerHTML =
+    '<option value="">Select Class</option>';
+
+
+  document.getElementById(
+    'subjectId'
+  ).innerHTML =
+    '<option value="">Select Subject</option>';
+
+
+  const semesters =
+    new Set();
+
+
+  semestersData.forEach(row => {
+
+    if (
+
+      String(
+        row['Academic Year']
+      ) ===
+      String(academicYear)
+
+    ) {
+
+      semesters.add(
+
+        String(
+          row['Semester']
+        )
+
+      );
+
+    }
+
+  });
+
+
+  [...semesters]
+
+    .sort(
+      (a, b) =>
+        Number(a) -
+        Number(b)
+    )
+
+    .forEach(semester => {
+
+      select.innerHTML +=
+        `<option value="${semester}">
+          Semester ${semester}
+        </option>`;
+
+    });
+
+}
+
+
+/* =====================================
+   CLASSES
+===================================== */
+
+function loadClasses() {
+
+  const academicYear =
+    document.getElementById(
+      'academicYear'
+    ).value;
+
+
+  const semester =
+    document.getElementById(
+      'semester'
+    ).value;
+
+
+  const select =
+    document.getElementById(
+      'classId'
+    );
+
+
+  select.innerHTML =
+    '<option value="">Select Class</option>';
+
+
+  document.getElementById(
+    'subjectId'
+  ).innerHTML =
+    '<option value="">Select Subject</option>';
+
+
+  const uniqueClasses =
+    new Map();
+
+
+  classesData.forEach(row => {
+
+    if (
+
+      String(
+        row['Academic Year']
+      ) ===
+      String(academicYear)
+
+      &&
+
+      String(
+        row['Semester']
+      ) ===
+      String(semester)
+
+    ) {
+
+      const id =
+        row['Class ID'];
+
+
+      if (
+        id &&
+        !uniqueClasses.has(
+          String(id)
+        )
+      ) {
+
+        uniqueClasses.set(
+
+          String(id),
+
+          row['Class Name'] ||
+          String(id)
+
+        );
+
+      }
+
+    }
+
+  });
+
+
+  uniqueClasses.forEach(
+    (className, id) => {
+
+      select.innerHTML +=
+        `<option value="${id}">
+          ${className}
+        </option>`;
+
+    }
+  );
+
+}
+
+
+/* =====================================
+   SUBJECTS
+===================================== */
+
+async function loadSubjects() {
+
+  const classId =
+    document.getElementById(
+      'classId'
+    ).value;
+
+
+  const semester =
+    document.getElementById(
+      'semester'
+    ).value;
+
+
+  const select =
+    document.getElementById(
+      'subjectId'
+    );
+
+
+  select.innerHTML =
+    '<option value="">Select Subject</option>';
+
+
+  if (
+    !classId ||
+    !semester
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    currentSubjects =
+      await apiGet(
+        'subjects',
+        {
+
+          classId,
+          semester
+
+        }
+      );
+
+
+    currentSubjects.forEach(
+      subject => {
+
+        select.innerHTML +=
+          `<option value="${subject.subjectId}">
+            ${subject.subjectName}
+          </option>`;
+
+      }
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      'Unable to load subjects.'
+    );
+
+  }
+
+}
+
+
+/* =====================================
+   LOAD PLAN
+===================================== */
+
+async function loadPlan() {
+
+  const academicYear =
+    document.getElementById(
+      'academicYear'
+    ).value;
+
+
+  const semester =
+    document.getElementById(
+      'semester'
+    ).value;
+
+
+  const classId =
+    document.getElementById(
+      'classId'
+    ).value;
+
+
+  const subjectId =
+    document.getElementById(
+      'subjectId'
+    ).value;
+
+
+  if (
+
+    !academicYear ||
+
+    !semester ||
+
+    !classId ||
+
+    !subjectId
+
+  ) {
+
+    alert(
+      'Please select all fields.'
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById(
+      'loadButton'
+    );
+
+
+  button.disabled =
+    true;
+
+
+  button.textContent =
+    'Loading...';
+
+
+  try {
+
+    /* CHECK EXISTING PLAN */
+
+    const existing =
+      await apiGet(
+        'annualPlan',
+        {
+
+          academicYear,
+          semester,
+          classId,
+          subjectId
+
+        }
+      );
+
+
+    if (
+      existing.length > 0
+    ) {
+
+      currentPlan = {
+
+        className:
+          existing[0]['Class'],
+
+        semesterName:
+          existing[0]['Semester Name'],
+
+        subjectName:
+          existing[0]['Subject'],
+
+        entries:
+
+          existing.map(row => ({
+
+            unit:
+              row['Unit'] || '',
+
+            month:
+              row['Month'] || '',
+
+            week:
+              row['Week'] || '',
+
+            curricularActivity:
+              row[
+                'Curricular Activity'
+              ] || '',
+
+            hoursAllotted:
+              row[
+                'Hours Allotted'
+              ] || '',
+
+            whetherConducted:
+              row[
+                'Whether Conducted'
+              ] || '',
+
+            alternateDate:
+              row[
+                'Alternate Date'
+              ] || '',
+
+            coCurricularActivity:
+              row[
+                'Co-Curricular Activity'
+              ] || '',
+
+            coCurricularHours:
+              row[
+                'Co-Curricular Hours'
+              ] || '',
+
+            coCurricularConducted:
+              row[
+                'Co-Curricular Conducted'
+              ] || '',
+
+            coCurricularAlternateDate:
+              row[
+                'Co-Curricular Alternate Date'
+              ] || ''
+
+          }))
+
+      };
+
+
+    } else {
+
+
+      /* GENERATE NEW PLAN */
+
+      currentPlan =
+        await apiGet(
+          'generateAnnualPlan',
+          {
+
+            academicYear,
+            semester,
+            classId,
+            subjectId
+
+          }
+        );
+
+    }
+
+
+    renderPlan();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      error.message
+    );
+
+  } finally {
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      'Load Plan';
+
+  }
+
+}
+
+
+/* =====================================
+   RENDER PLAN
+===================================== */
+
+function renderPlan() {
+
+  document.getElementById(
+    'planArea'
+  ).style.display =
+    'block';
+
+
+  document.getElementById(
+    'displayClass'
+  ).textContent =
+    currentPlan.className;
+
+
+  document.getElementById(
+    'displaySemester'
+  ).textContent =
+    currentPlan.semesterName;
+
+
+  document.getElementById(
+    'displaySubject'
+  ).textContent =
+    currentPlan.subjectName;
+
+
+  let html = `
+
+    <tr>
+
+      <th>Unit</th>
+
+      <th>Month</th>
+
+      <th>Week</th>
+
+      <th>Curricular Activity</th>
+
+      <th>Hours Allotted</th>
+
+      <th>Whether Conducted</th>
+
+      <th>Alternate Date</th>
+
+      <th>Co-Curricular Activity</th>
+
+      <th>Co-Curricular Hours</th>
+
+      <th>Co-Curricular Conducted</th>
+
+      <th>Co-Curricular Alternate Date</th>
+
+    </tr>
+
+  `;
+
+
+  currentPlan.entries.forEach(
+    (entry, index) => {
+
+      html += `
+
+        <tr>
+
+          <td>
+
+            <input
+
+              data-index="${index}"
+
+              data-field="unit"
+
+              value="${escapeHtml(entry.unit)}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              data-index="${index}"
+
+              data-field="month"
+
+              value="${escapeHtml(entry.month)}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              data-index="${index}"
+
+              data-field="week"
+
+              value="${escapeHtml(entry.week)}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <textarea
+
+              data-index="${index}"
+
+              data-field="curricularActivity"
+
+            >${escapeHtml(
+              entry.curricularActivity
+            )}</textarea>
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              type="number"
+
+              data-index="${index}"
+
+              data-field="hoursAllotted"
+
+              value="${entry.hoursAllotted}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              data-index="${index}"
+
+              data-field="whetherConducted"
+
+              value="${escapeHtml(
+                entry.whetherConducted
+              )}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              type="date"
+
+              data-index="${index}"
+
+              data-field="alternateDate"
+
+              value="${formatInputDate(
+                entry.alternateDate
+              )}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <textarea
+
+              data-index="${index}"
+
+              data-field="coCurricularActivity"
+
+            >${escapeHtml(
+              entry.coCurricularActivity
+            )}</textarea>
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              type="number"
+
+              data-index="${index}"
+
+              data-field="coCurricularHours"
+
+              value="${entry.coCurricularHours}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              data-index="${index}"
+
+              data-field="coCurricularConducted"
+
+              value="${escapeHtml(
+                entry.coCurricularConducted
+              )}"
+
+            >
+
+          </td>
+
+
+          <td>
+
+            <input
+
+              type="date"
+
+              data-index="${index}"
+
+              data-field="coCurricularAlternateDate"
+
+              value="${formatInputDate(
+                entry.coCurricularAlternateDate
+              )}"
+
+            >
+
+          </td>
+
+        </tr>
+
+      `;
+
+    }
+  );
+
+
+  document.getElementById(
+    'planTable'
+  ).innerHTML =
+    html;
+
+}
+
+
+/* =====================================
+   SAVE PLAN
+===================================== */
+
+async function savePlan() {
+
+  if (
+    !currentPlan
+  ) {
+
+    return;
+
+  }
+
+
+  document
+    .querySelectorAll(
+      '#planTable [data-index]'
+    )
+
+    .forEach(element => {
+
+      const index =
+        Number(
+          element.dataset.index
+        );
+
+
+      const field =
+        element.dataset.field;
+
+
+      currentPlan
+        .entries[index][field] =
+          element.value;
+
+    });
+
+
+  const academicYear =
+    document.getElementById(
+      'academicYear'
+    ).value;
+
+
+  const semester =
+    document.getElementById(
+      'semester'
+    ).value;
+
+
+  const classId =
+    document.getElementById(
+      'classId'
+    ).value;
+
+
+  const subjectId =
+    document.getElementById(
+      'subjectId'
+    ).value;
+
+
+  const button =
+    document.getElementById(
+      'saveButton'
+    );
+
+
+  button.disabled =
+    true;
+
+
+  button.textContent =
+    'Saving...';
+
+
+  try {
+
+    await apiPost({
+
+      action:
+        'saveAnnualPlan',
+
+      academicYear,
+
+      semester,
+
+      classId,
+
+      subjectId,
+
+      className:
+        currentPlan.className,
+
+      semesterName:
+        currentPlan.semesterName,
+
+      subjectName:
+        currentPlan.subjectName,
+
+      entries:
+        currentPlan.entries
+
+    });
+
+
+    alert(
+      'Annual Curricular Plan saved successfully.'
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      error.message
+    );
+
+  } finally {
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      'Save Plan';
+
+  }
+
+}
+
+
+/* =====================================
+   ESCAPE HTML
+===================================== */
+
+function escapeHtml(value) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return '';
+
+  }
+
+
+  return String(value)
+
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+
+    .replace(
+      /</g,
+      '&lt;'
+    )
+
+    .replace(
+      />/g,
+      '&gt;'
+    )
+
+    .replace(
+      /"/g,
+      '&quot;'
+    );
+
+}
+
+
+/* =====================================
+   FORMAT DATE
+===================================== */
+
+function formatInputDate(value) {
+
+  if (!value) {
+
+    return '';
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return '';
+
+  }
+
+
+  return date
+    .toISOString()
+    .split('T')[0];
+
+}
+
+
+/* =====================================
+   EVENTS
+===================================== */
+
+document
+  .getElementById(
+    'academicYear'
+  )
+
+  .addEventListener(
+    'change',
+    loadSemesters
+  );
+
+
+document
+  .getElementById(
+    'semester'
+  )
+
+  .addEventListener(
+    'change',
+    loadClasses
+  );
+
+
+document
+  .getElementById(
+    'classId'
+  )
+
+  .addEventListener(
+    'change',
+    loadSubjects
+  );
+
+
+document
+  .getElementById(
+    'loadButton'
+  )
+
+  .addEventListener(
+    'click',
+    loadPlan
+  );
+
+
+document
+  .getElementById(
+    'saveButton'
+  )
+
+  .addEventListener(
+    'click',
+    savePlan
+  );
+
+
+/* =====================================
+   START
+===================================== */
+
+loadInitialData();
+
+</script>
+
+
+</body>
+
+</html>

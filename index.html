@@ -248,63 +248,6 @@ body {
   margin: 0;
   color: #666;
 }
-<!-- TIMETABLE MODULE -->
-
-<div
-  id="timetableModule"
-  class="main-container"
-  style="display:none;"
->
-
-  <button onclick="closeTimetable()">
-    ← Back to Dashboard
-  </button>
-
-  <h2 class="section-title">
-    My Timetable
-  </h2>
-
-
-  <div class="timetable-selectors">
-
-    <select id="ttAcademicYear">
-      <option value="">Select Academic Year</option>
-    </select>
-
-
-    <select id="ttSemester">
-      <option value="">Select Semester</option>
-    </select>
-
-
-    <select id="ttClass">
-      <option value="">Select Class</option>
-    </select>
-
-  </div>
-
-
-  <div id="timetableContainer">
-
-    <p style="text-align:center;">
-      Select Academic Year, Semester and Class.
-    </p>
-
-  </div>
-
-
-  <div
-    id="timetableSaveArea"
-    style="display:none; text-align:center; margin-top:20px;"
-  >
-
-    <button onclick="saveTimetable()">
-      💾 Save Timetable
-    </button>
-
-  </div>
-
-</div>
 /* =========================
    STATUS
 ========================= */
@@ -530,7 +473,58 @@ body {
   </div>
 
 </div>
+<!-- TIMETABLE MODULE -->
 
+<div
+  id="timetableModule"
+  class="main-container"
+  style="display:none;"
+>
+
+  <button onclick="closeTimetable()">
+    ← Back to Dashboard
+  </button>
+
+  <h2 class="section-title">
+    My Timetable
+  </h2>
+
+  <div class="timetable-selectors">
+
+    <select id="ttAcademicYear">
+      <option value="">Select Academic Year</option>
+    </select>
+
+    <select id="ttSemester">
+      <option value="">Select Semester</option>
+    </select>
+
+    <select id="ttClass">
+      <option value="">Select Class</option>
+    </select>
+
+  </div>
+
+  <div id="timetableContainer">
+
+    <p style="text-align:center;">
+      Select Academic Year, Semester and Class.
+    </p>
+
+  </div>
+
+  <div
+    id="timetableSaveArea"
+    style="display:none; text-align:center; margin-top:20px;"
+  >
+
+    <button onclick="saveTimetable()">
+      💾 Save Timetable
+    </button>
+
+  </div>
+
+</div>
 
 <div class="status" id="status">
   Connecting to Academic Records Backend...

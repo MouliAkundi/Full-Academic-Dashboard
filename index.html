@@ -737,11 +737,6 @@ async function loadTimetableSelectors() {
 
     loadAcademicYears();
 
-    loadSemesters();
-
-    loadClasses();
-
-
   } catch (error) {
 
     console.error(error);
@@ -800,37 +795,51 @@ function loadSemesters() {
   const select =
     document.getElementById("ttSemester");
 
+  const academicYear =
+    document.getElementById("ttAcademicYear").value;
+
   select.innerHTML =
     '<option value="">Select Semester</option>';
 
+  document.getElementById("ttClass").innerHTML =
+    '<option value="">Select Class</option>';
+
+  const semesters = new Set();
 
   semestersData.forEach(row => {
 
-    const semester =
-      row["Semester"];
+    if (
+      String(row["Academic Year"]) ===
+      String(academicYear)
+    ) {
 
-    if (semester) {
+      const semester = row["Semester"];
+
+      if (semester !== "" && semester != null) {
+        semesters.add(String(semester));
+      }
+
+    }
+
+  });
+
+  [...semesters]
+    .sort((a, b) => Number(a) - Number(b))
+    .forEach(semester => {
 
       select.innerHTML +=
         `<option value="${semester}">
           ${semester}
         </option>`;
 
-    }
+    });
 
-  });
-
-}
-
-
-/* CLASSES */
+}/* CLASSES */
 
 function loadClasses() {
 
-  const select = document.getElementById("ttClass");
-
-  select.innerHTML =
-    '<option value="">Select Class</option>';
+  const select =
+    document.getElementById("ttClass");
 
   const academicYear =
     document.getElementById("ttAcademicYear").value;
@@ -838,20 +847,36 @@ function loadClasses() {
   const semester =
     document.getElementById("ttSemester").value;
 
+  select.innerHTML =
+    '<option value="">Select Class</option>';
+
+  if (!academicYear || !semester) {
+    return;
+  }
+
   const uniqueClasses = new Map();
 
   classesData.forEach(row => {
 
     if (
-      row["Academic Year"] === academicYear &&
-      String(row["Semester"]) === String(semester)
+      String(row["Academic Year"]) ===
+        String(academicYear) &&
+
+      String(row["Semester"]) ===
+        String(semester)
     ) {
 
       const classId = row["Class ID"];
 
-      if (classId && !uniqueClasses.has(classId)) {
+      if (
+        classId &&
+        !uniqueClasses.has(String(classId))
+      ) {
 
-        uniqueClasses.set(classId, classId);
+        uniqueClasses.set(
+          String(classId),
+          String(classId)
+        );
 
       }
 
@@ -862,30 +887,13 @@ function loadClasses() {
   uniqueClasses.forEach((className, classId) => {
 
     select.innerHTML +=
-      `<option value="${classId}">${className}</option>`;
+      `<option value="${classId}">
+        ${className}
+      </option>`;
 
   });
 
-}/* WHEN CLASS / SEMESTER CHANGES */
-
-document.addEventListener(
-  "change",
-  async function(event) {
-
-    if (
-      event.target.id === "ttClass" ||
-      event.target.id === "ttSemester" ||
-      event.target.id === "ttAcademicYear"
-    ) {
-
-      await prepareTimetable();
-
-    }
-
-  }
-);
-
-
+}
 /* PREPARE TIMETABLE */
 
 async function prepareTimetable() {

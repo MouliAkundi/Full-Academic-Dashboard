@@ -827,40 +827,46 @@ function loadSemesters() {
 
 function loadClasses() {
 
-  const select =
-    document.getElementById("ttClass");
+  const select = document.getElementById("ttClass");
 
   select.innerHTML =
     '<option value="">Select Class</option>';
 
+  const academicYear =
+    document.getElementById("ttAcademicYear").value;
+
+  const semester =
+    document.getElementById("ttSemester").value;
+
+  const uniqueClasses = new Map();
 
   classesData.forEach(row => {
 
-    const classId =
-      row["Class ID"];
+    if (
+      row["Academic Year"] === academicYear &&
+      String(row["Semester"]) === String(semester)
+    ) {
 
+      const classId = row["Class ID"];
 
-    const className =
-      row["Class Name"] ||
-      row["Class"] ||
-      row["Display Name"] ||
-      row["Class Display Name"] ||
-      classId;
+      if (classId && !uniqueClasses.has(classId)) {
 
+        uniqueClasses.set(classId, classId);
 
-    if (classId) {
-
-      select.innerHTML +=
-        `<option value="${classId}">
-          ${className}
-        </option>`;
+      }
 
     }
 
   });
 
-}
-/* WHEN CLASS / SEMESTER CHANGES */
+  uniqueClasses.forEach((className, classId) => {
+
+    select.innerHTML +=
+      `<option value="${classId}">${className}</option>`;
+
+  });
+
+}/* WHEN CLASS / SEMESTER CHANGES */
 
 document.addEventListener(
   "change",

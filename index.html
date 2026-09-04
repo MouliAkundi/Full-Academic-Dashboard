@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Academic Dashboard</title>
+
+<style>
+:root {
+  --primary: #1f4e79;
+  --secondary: #2f75b5;
+  --light: #f4f7fb;
+  --white: #ffffff;
+  --text: #1f2937;
+  --border: #dbe3ee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--light);
+  color: var(--text);
+}
+
+/* =========================
+   INSTITUTION HEADER
+========================= */
+
+.institution-header {
+  background: var(--white);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.institution-content {
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 90px 1fr 90px;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.institution-logo {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  margin: auto;
+}
+
+.institution-details h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--primary);
+}
+
+.institution-details p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+/* =========================
+   PERSONAL HEADER
+========================= */
+
+.personal-header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 25px 20px;
+}
+
+.personal-content {
+  max-width: 900px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 110px 1fr 110px;
+  align-items: center;
+  text-align: center;
+}
+
+.personal-photo,
+.personal-logo {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  background: white;
+  border: 3px solid white;
+}
+
+.personal-photo {
+  border-radius: 50%;
+}
+
+.personal-logo {
+  border-radius: 15px;
+}
+
+.personal-name {
+  margin: 0;
+  font-size: 28px;
+}
+
+.dashboard-title {
+  margin: 7px 0 0;
+  font-size: 18px;
+  font-weight: normal;
+}
+
+/* =========================
+   QUICK LINKS
+========================= */
+
+.quick-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px;
+  background: white;
+}
+
+.quick-links button {
+  border: none;
+  background: var(--primary);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.quick-links button:hover {
+  opacity: 0.9;
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
+.main-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 30px 20px;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 25px;
+  color: var(--primary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.10);
+}
+
+.card-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  margin: 5px 0 8px;
+  color: var(--primary);
+}
+
+.card p {
+  font-size: 14px;
+  margin: 0;
+  color: #666;
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.status {
+  text-align: center;
+  padding: 10px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .institution-content {
+    grid-template-columns: 60px 1fr 60px;
+  }
+
+  .institution-logo {
+    width: 50px;
+    height: 50px;
+  }
+
+  .institution-details h2 {
+    font-size: 15px;
+  }
+
+  .institution-details p {
+    font-size: 11px;
+  }
+
+  .personal-content {
+    grid-template-columns: 75px 1fr 75px;
+  }
+
+  .personal-photo,
+  .personal-logo {
+    width: 65px;
+    height: 65px;
+  }
+
+  .personal-name {
+    font-size: 20px;
+  }
+
+  .dashboard-title {
+    font-size: 15px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- INSTITUTION HEADER -->
+
+<div class="institution-header">
+
+  <div class="institution-content">
+
+    <img
+      id="logo1"
+      class="institution-logo"
+      src=""
+      alt="Logo">
+
+    <div class="institution-details">
+
+      <h2 id="institutionName">
+        Loading...
+      </h2>
+
+      <p id="institutionAddress"></p>
+
+      <p id="commissionerateName"></p>
+
+    </div>
+
+    <img
+      id="logo2"
+      class="institution-logo"
+      src=""
+      alt="Logo">
+
+  </div>
+
+</div>
+
+
+<!-- PERSONAL HEADER -->
+
+<div class="personal-header">
+
+  <div class="personal-content">
+
+    <!-- YOUR PHOTO -->
+
+    <img
+      class="personal-photo"
+      src="profile.jpg"
+      alt="My Photo">
+
+    <div>
+
+      <h1 class="personal-name">
+        YOUR NAME
+      </h1>
+
+      <p class="dashboard-title">
+        My Academic Dashboard
+      </p>
+
+    </div>
+
+    <!-- YOUR PERSONAL LOGO -->
+
+    <img
+      class="personal-logo"
+      src="personal-logo.png"
+      alt="Personal Logo">
+
+  </div>
+
+</div>
+
+
+<!-- QUICK LINKS -->
+
+<div class="quick-links">
+
+  <button onclick="openLink('website')">
+    🌐 My Website
+  </button>
+
+  <button onclick="openLink('profile')">
+    👤 My Profile
+  </button>
+
+  <button onclick="openLink('learning')">
+    📚 Learning Materials
+  </button>
+
+</div>
+
+
+<!-- MAIN DASHBOARD -->
+
+<div class="main-container">
+
+  <h2 class="section-title">
+    Academic Management
+  </h2>
+
+  <div class="dashboard-grid">
+
+    <div class="card" onclick="openModule('timetable')">
+
+      <div class="card-icon">📅</div>
+
+      <h3>My Timetable</h3>
+
+      <p>
+        Create and manage your weekly timetable.
+      </p>
+
+    </div>
+
+
+    <div class="card" onclick="openModule('annual-plan')">
+
+      <div class="card-icon">📘</div>
+
+      <h3>Annual Curricular Plan</h3>
+
+      <p>
+        Generate, edit and download annual plans.
+      </p>
+
+    </div>
+
+
+    <div class="card" onclick="openModule('teaching-diary')">
+
+      <div class="card-icon">📖</div>
+
+      <h3>Teaching Diary</h3>
+
+      <p>
+        Automatically maintain daily teaching records.
+      </p>
+
+    </div>
+
+
+    <div class="card" onclick="openModule('attendance')">
+
+      <div class="card-icon">👥</div>
+
+      <h3>Attendance</h3>
+
+      <p>
+        Record and manage student attendance.
+      </p>
+
+    </div>
+
+
+    <div class="card" onclick="openModule('reports')">
+
+      <div class="card-icon">📊</div>
+
+      <h3>Reports & Downloads</h3>
+
+      <p>
+        Retrieve and download academic records.
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="status" id="status">
+  Connecting to Academic Records Backend...
+</div>
+
+
+<script>
+
+/* ========================================
+   GOOGLE APPS SCRIPT API
+======================================== */
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec";
+
+
+/* ========================================
+   LOAD CONFIGURATION
+======================================== */
+
+async function loadConfig() {
+
+  try {
+
+    const response = await fetch(
+      API_URL + "?action=config"
+    );
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    const config = {};
+
+    result.data.forEach(row => {
+
+      config[row.Setting] = row.Value;
+
+    });
+
+
+    /* INSTITUTION DETAILS */
+
+    document.getElementById("institutionName").textContent =
+      config["Institution Name"] || "";
+
+    document.getElementById("institutionAddress").textContent =
+      config["Institution Address"] || "";
+
+    document.getElementById("commissionerateName").textContent =
+      config["Commissionerate / Department Name"] || "";
+
+
+    /* LOGOS */
+
+    if (config["Logo 1 URL"]) {
+
+      document.getElementById("logo1").src =
+        config["Logo 1 URL"];
+
+    }
+
+    if (config["Logo 2 URL"]) {
+
+      document.getElementById("logo2").src =
+        config["Logo 2 URL"];
+
+    }
+
+
+    document.getElementById("status").textContent =
+      "Academic Records Backend connected successfully.";
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    document.getElementById("status").textContent =
+      "Unable to connect to Academic Records Backend.";
+
+  }
+
+}
+
+
+/* ========================================
+   QUICK LINKS
+======================================== */
+
+function openLink(type) {
+
+  const links = {
+
+    website: "",
+    profile: "",
+    learning: ""
+
+  };
+
+
+  if (!links[type]) {
+
+    alert("This link has not been configured yet.");
+
+    return;
+
+  }
+
+  window.open(
+    links[type],
+    "_blank"
+  );
+
+}
+
+
+/* ========================================
+   MODULE PLACEHOLDERS
+======================================== */
+
+function openModule(module) {
+
+  alert(
+    module.replace("-", " ").toUpperCase() +
+    " module will be added next."
+  );
+
+}
+
+
+/* ========================================
+   START APP
+======================================== */
+
+loadConfig();
+
+</script>
+
+</body>
+</html>

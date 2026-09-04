@@ -839,8 +839,14 @@ function loadClasses() {
     const classId =
       row["Class ID"];
 
+
     const className =
-      row["Class"];
+      row["Class Name"] ||
+      row["Class"] ||
+      row["Display Name"] ||
+      row["Class Display Name"] ||
+      classId;
+
 
     if (classId) {
 
@@ -854,8 +860,6 @@ function loadClasses() {
   });
 
 }
-
-
 /* WHEN CLASS / SEMESTER CHANGES */
 
 document.addEventListener(
@@ -1195,8 +1199,12 @@ async function saveTimetable() {
     classId:
       classId,
 
-    className:
-      selectedClass["Class"],
+   className:
+  selectedClass["Class Name"] ||
+  selectedClass["Class"] ||
+  selectedClass["Display Name"] ||
+  selectedClass["Class Display Name"] ||
+  classId,
 
     entries:
       entries

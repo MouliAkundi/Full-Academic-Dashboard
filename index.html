@@ -737,104 +737,64 @@ function loadSemesters() {
    LOAD CLASSES
 ======================================== */
 
+/* CLASSES */
+
 function loadClasses() {
 
   const select =
     document.getElementById("ttClass");
 
-
   const academicYear =
-    document.getElementById(
-      "ttAcademicYear"
-    ).value;
-
+    document.getElementById("ttAcademicYear").value;
 
   const semester =
-    document.getElementById(
-      "ttSemester"
-    ).value;
+    document.getElementById("ttSemester").value;
 
 
   select.innerHTML =
     '<option value="">Select Class</option>';
 
 
-  document.getElementById(
-    "timetableContainer"
-  ).innerHTML =
-    `<p style="text-align:center;">
-      Select Academic Year, Semester and Class.
-    </p>`;
-
-
-  document.getElementById(
-    "timetableSaveArea"
-  ).style.display = "none";
-
-
-  if (
-    !academicYear ||
-    !semester
-  ) {
-
+  if (!academicYear || !semester) {
     return;
-
   }
 
 
-  /*
-     Master Classes contains one row
-     for each student.
-
-     Therefore, the same class occurs
-     repeatedly.
-
-     We create one unique entry for
-     each Class ID.
-  */
-
-  const uniqueClasses =
-    new Map();
+  const uniqueClasses = new Map();
 
 
   classesData.forEach(row => {
 
     if (
 
-      String(
-        row["Academic Year"]
-      ) === String(academicYear)
+      String(row["Academic Year"]).trim() ===
+      String(academicYear).trim()
 
       &&
 
-      String(
-        row["Semester"]
-      ) === String(semester)
+      String(row["Semester"]).trim() ===
+      String(semester).trim()
 
     ) {
 
       const classId =
         row["Class ID"];
 
-
       const className =
         row["Class Name"];
 
 
       if (
+
         classId &&
         className &&
-        !uniqueClasses.has(
-          String(classId)
-        )
+        !uniqueClasses.has(String(classId))
+
       ) {
 
         uniqueClasses.set(
-
           String(classId),
-
           String(className)
-
         );
 
       }
@@ -856,11 +816,12 @@ function loadClasses() {
   );
 
 }
-
-
-/* ========================================
-   SELECTOR CHANGE EVENTS
+  /* ========================================
+   TIMETABLE SELECTOR EVENTS
 ======================================== */
+
+
+/* ACADEMIC YEAR CHANGED */
 
 document
   .getElementById("ttAcademicYear")
@@ -870,9 +831,22 @@ document
 
       loadSemesters();
 
+      document.getElementById(
+        "timetableContainer"
+      ).innerHTML =
+        `<p style="text-align:center;">
+          Select Academic Year, Semester and Class.
+        </p>`;
+
+      document.getElementById(
+        "timetableSaveArea"
+      ).style.display = "none";
+
     }
   );
 
+
+/* SEMESTER CHANGED */
 
 document
   .getElementById("ttSemester")
@@ -882,21 +856,33 @@ document
 
       loadClasses();
 
+      document.getElementById(
+        "timetableContainer"
+      ).innerHTML =
+        `<p style="text-align:center;">
+          Select Academic Year, Semester and Class.
+        </p>`;
+
+      document.getElementById(
+        "timetableSaveArea"
+      ).style.display = "none";
+
     }
   );
 
+
+/* CLASS CHANGED */
 
 document
   .getElementById("ttClass")
   .addEventListener(
     "change",
-    async function() {
+    function() {
 
-      await prepareTimetable();
+      prepareTimetable();
 
     }
   );
-
 
 /* ========================================
    PREPARE TIMETABLE
@@ -1209,7 +1195,44 @@ function renderTimetable(existing) {
   ).style.display = "block";
 
 }
+/* ========================================
+   SELECTOR CHANGE EVENTS
+======================================== */
 
+document
+  .getElementById("ttAcademicYear")
+  .addEventListener(
+    "change",
+    function() {
+
+      loadSemesters();
+
+    }
+  );
+
+
+document
+  .getElementById("ttSemester")
+  .addEventListener(
+    "change",
+    function() {
+
+      loadClasses();
+
+    }
+  );
+
+
+document
+  .getElementById("ttClass")
+  .addEventListener(
+    "change",
+    async function() {
+
+      await prepareTimetable();
+
+    }
+  );
 
 /* ========================================
    SAVE TIMETABLE

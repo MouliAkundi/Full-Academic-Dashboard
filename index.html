@@ -473,197 +473,6 @@ body {
   </div>
 
 </div>
-<!-- TIMETABLE MODULE -->
-
-<div
-  id="timetableModule"
-  class="main-container"
-  style="display:none;"
->
-
-  <button onclick="closeTimetable()">
-    ← Back to Dashboard
-  </button>
-
-  <h2 class="section-title">
-    My Timetable
-  </h2>
-
-  <div class="timetable-selectors">
-
-    <select id="ttAcademicYear">
-      <option value="">Select Academic Year</option>
-    </select>
-
-    <select id="ttSemester">
-      <option value="">Select Semester</option>
-    </select>
-
-    <select id="ttClass">
-      <option value="">Select Class</option>
-    </select>
-
-  </div>
-
-  <div id="timetableContainer">
-
-    <p style="text-align:center;">
-      Select Academic Year, Semester and Class.
-    </p>
-
-  </div>
-
-  <div
-    id="timetableSaveArea"
-    style="display:none; text-align:center; margin-top:20px;"
-  >
-
-    <button onclick="saveTimetable()">
-      💾 Save Timetable
-    </button>
-
-  </div>
-
-</div>
-
-<div class="status" id="status">
-  Connecting to Academic Records Backend...
-</div>
-
-
-<script>
-
-/* ========================================
-   GOOGLE APPS SCRIPT API
-======================================== */
-
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec";
-
-
-/* ========================================
-   LOAD CONFIGURATION
-======================================== */
-
-async function loadConfig() {
-
-  try {
-
-    const response = await fetch(
-      API_URL + "?action=config"
-    );
-
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    const config = {};
-
-    result.data.forEach(row => {
-
-      config[row.Setting] = row.Value;
-
-    });
-
-
-    /* INSTITUTION DETAILS */
-
-    document.getElementById("institutionName").textContent =
-      config["Institution Name"] || "";
-
-    document.getElementById("institutionAddress").textContent =
-      config["Institution Address"] || "";
-
-    document.getElementById("commissionerateName").textContent =
-      config["Commissionerate / Department Name"] || "";
-
-
-    /* LOGOS */
-
-    if (config["Logo 1 URL"]) {
-
-      document.getElementById("logo1").src =
-        config["Logo 1 URL"];
-
-    }
-
-    if (config["Logo 2 URL"]) {
-
-      document.getElementById("logo2").src =
-        config["Logo 2 URL"];
-
-    }
-
-
-    document.getElementById("status").textContent =
-      "Academic Records Backend connected successfully.";
-
-  }
-
-  catch (error) {
-
-    console.error(error);
-
-    document.getElementById("status").textContent =
-      "Unable to connect to Academic Records Backend.";
-
-  }
-
-}
-
-
-/* ========================================
-   QUICK LINKS
-======================================== */
-
-function openLink(type) {
-
-  const links = {
-
-    website: "",
-    profile: "",
-    learning: ""
-
-  };
-
-
-  if (!links[type]) {
-
-    alert("This link has not been configured yet.");
-
-    return;
-
-  }
-
-  window.open(
-    links[type],
-    "_blank"
-  );
-
-}
-
-
-/* ========================================
-   MODULE PLACEHOLDERS
-======================================== */
-
-function openModule(module) {
-
-  alert(
-    module.replace("-", " ").toUpperCase() +
-    " module will be added next."
-  );
-
-}
-
-
-/* ========================================
-   START APP
-======================================== */
-
-loadConfig();
 /* ========================================
    TIMETABLE MODULE
 ======================================== */
@@ -674,15 +483,20 @@ let periodsData = [];
 let currentSubjects = [];
 
 
-/* OPEN MODULE */
+/* ========================================
+   OPEN TIMETABLE MODULE
+======================================== */
 
 async function showTimetable() {
 
   document.querySelector(".main-container").style.display = "none";
+
   document.getElementById("timetableModule").style.display = "block";
 
   document.getElementById("timetableContainer").innerHTML =
-    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
+    `<p style="text-align:center;">
+      Select Academic Year, Semester and Class.
+    </p>`;
 
   document.getElementById("timetableSaveArea").style.display = "none";
 
@@ -691,76 +505,82 @@ async function showTimetable() {
 }
 
 
-/* CLOSE MODULE */
+/* ========================================
+   CLOSE TIMETABLE MODULE
+======================================== */
 
 function closeTimetable() {
 
-  document.getElementById("timetableModule")
-    .style.display = "none";
+  document.getElementById("timetableModule").style.display = "none";
 
-  document.querySelector(".main-container")
-    .style.display = "block";
+  document.querySelector(".main-container").style.display = "block";
 
 }
 
 
-/* LOAD SELECTORS */
+/* ========================================
+   LOAD INITIAL SELECTOR DATA
+======================================== */
 
 async function loadTimetableSelectors() {
 
   try {
 
-    const [classesResponse, semestersResponse, periodsResponse] =
-      await Promise.all([
-        fetch(API_URL + "?action=classes"),
-        fetch(API_URL + "?action=semesters"),
-        fetch(API_URL + "?action=periods")
-      ]);
+    const responses = await Promise.all([
 
-    const [classesResult, semestersResult, periodsResult] =
-      await Promise.all([
-        classesResponse.json(),
-        semestersResponse.json(),
-        periodsResponse.json()
-      ]);
+      fetch(API_URL + "?action=classes"),
 
-    if (
-      !classesResult.success ||
-      !semestersResult.success ||
-      !periodsResult.success
-    ) {
-      throw new Error(
-        classesResult.error ||
-        semestersResult.error ||
-        periodsResult.error ||
-        "Unable to load timetable configuration."
-      );
-    }
+      fetch(API_URL + "?action=semesters"),
 
-    classesData = Array.isArray(classesResult.data)
-      ? classesResult.data : [];
+      fetch(API_URL + "?action=periods")
 
-    semestersData = Array.isArray(semestersResult.data)
-      ? semestersResult.data : [];
+    ]);
 
-    periodsData = Array.isArray(periodsResult.data)
-      ? periodsResult.data : [];
+
+    const classesResponse = responses[0];
+
+    const semestersResponse = responses[1];
+
+    const periodsResponse = responses[2];
+
+
+    const classesResult =
+      await classesResponse.json();
+
+    const semestersResult =
+      await semestersResponse.json();
+
+    const periodsResult =
+      await periodsResponse.json();
+
+
+    classesData =
+      classesResult.data || [];
+
+    semestersData =
+      semestersResult.data || [];
+
+    periodsData =
+      periodsResult.data || [];
+
 
     loadAcademicYears();
+
 
     document.getElementById("ttSemester").innerHTML =
       '<option value="">Select Semester</option>';
 
+
     document.getElementById("ttClass").innerHTML =
       '<option value="">Select Class</option>';
+
 
   } catch (error) {
 
     console.error(error);
 
     alert(
-      "Unable to load timetable configuration: " +
-      error.message
+      "Unable to load timetable configuration."
     );
 
   }
@@ -768,142 +588,234 @@ async function loadTimetableSelectors() {
 }
 
 
-/* ACADEMIC YEARS */
+/* ========================================
+   LOAD ACADEMIC YEARS
+======================================== */
 
 function loadAcademicYears() {
 
   const select =
     document.getElementById("ttAcademicYear");
 
+
   select.innerHTML =
     '<option value="">Select Academic Year</option>';
 
+
   const years = new Set();
+
 
   semestersData.forEach(row => {
 
-    const year = row["Academic Year"];
+    const academicYear =
+      row["Academic Year"];
 
-    if (year !== "" && year != null) {
-      years.add(String(year));
+    if (
+      academicYear !== "" &&
+      academicYear != null
+    ) {
+
+      years.add(
+        String(academicYear)
+      );
+
     }
 
   });
 
+
   [...years]
     .sort()
-    .reverse()
     .forEach(year => {
 
       select.innerHTML +=
-        `<option value="${year}">${year}</option>`;
+        `<option value="${year}">
+          ${year}
+        </option>`;
 
     });
 
 }
 
 
-/* SEMESTERS */
+/* ========================================
+   LOAD SEMESTERS
+======================================== */
 
 function loadSemesters() {
 
   const select =
     document.getElementById("ttSemester");
 
+
   const academicYear =
-    document.getElementById("ttAcademicYear").value;
+    document.getElementById(
+      "ttAcademicYear"
+    ).value;
+
 
   select.innerHTML =
     '<option value="">Select Semester</option>';
 
+
   document.getElementById("ttClass").innerHTML =
     '<option value="">Select Class</option>';
 
-  document.getElementById("timetableContainer").innerHTML =
-    '<p style="text-align:center;">Select Academic Year, Semester and Class.</p>';
 
-  document.getElementById("timetableSaveArea").style.display =
-    "none";
+  document.getElementById(
+    "timetableContainer"
+  ).innerHTML =
+    `<p style="text-align:center;">
+      Select Academic Year, Semester and Class.
+    </p>`;
 
-  if (!academicYear) return;
 
-  const semesters = new Set();
+  document.getElementById(
+    "timetableSaveArea"
+  ).style.display = "none";
+
+
+  if (!academicYear) {
+
+    return;
+
+  }
+
+
+  const semesters =
+    new Set();
+
 
   semestersData.forEach(row => {
 
     if (
-      String(row["Academic Year"]).trim() ===
-      String(academicYear).trim()
+
+      String(
+        row["Academic Year"]
+      ) === String(academicYear)
+
     ) {
 
-      const semester = row["Semester"];
+      const semester =
+        row["Semester"];
 
-      if (semester !== "" && semester != null) {
-        semesters.add(String(semester));
+
+      if (
+        semester !== "" &&
+        semester != null
+      ) {
+
+        semesters.add(
+          String(semester)
+        );
+
       }
 
     }
 
   });
 
+
   [...semesters]
-    .sort((a, b) => Number(a) - Number(b))
+    .sort(
+      (a, b) =>
+        Number(a) - Number(b)
+    )
     .forEach(semester => {
 
       select.innerHTML +=
-        `<option value="${semester}">${semester}</option>`;
+        `<option value="${semester}">
+          ${semester}
+        </option>`;
 
     });
 
 }
 
 
-/* CLASSES */
-
-/* CLASSES */
-
-/* CLASSES */
+/* ========================================
+   LOAD CLASSES
+======================================== */
 
 function loadClasses() {
 
   const select =
     document.getElementById("ttClass");
 
+
   const academicYear =
-    document.getElementById("ttAcademicYear").value;
+    document.getElementById(
+      "ttAcademicYear"
+    ).value;
+
 
   const semester =
-    document.getElementById("ttSemester").value;
+    document.getElementById(
+      "ttSemester"
+    ).value;
 
 
   select.innerHTML =
     '<option value="">Select Class</option>';
 
 
-  if (!academicYear || !semester) {
+  document.getElementById(
+    "timetableContainer"
+  ).innerHTML =
+    `<p style="text-align:center;">
+      Select Academic Year, Semester and Class.
+    </p>`;
+
+
+  document.getElementById(
+    "timetableSaveArea"
+  ).style.display = "none";
+
+
+  if (
+    !academicYear ||
+    !semester
+  ) {
+
     return;
+
   }
 
 
-  const uniqueClasses = new Map();
+  /*
+     Master Classes contains one row
+     for each student.
+
+     Therefore, the same class occurs
+     repeatedly.
+
+     We create one unique entry for
+     each Class ID.
+  */
+
+  const uniqueClasses =
+    new Map();
 
 
   classesData.forEach(row => {
 
     if (
 
-      String(row["Academic Year"]).trim() ===
-      String(academicYear).trim()
+      String(
+        row["Academic Year"]
+      ) === String(academicYear)
 
       &&
 
-      String(row["Semester"]).trim() ===
-      String(semester).trim()
+      String(
+        row["Semester"]
+      ) === String(semester)
 
     ) {
 
       const classId =
         row["Class ID"];
+
 
       const className =
         row["Class Name"];
@@ -912,12 +824,17 @@ function loadClasses() {
       if (
         classId &&
         className &&
-        !uniqueClasses.has(String(classId))
+        !uniqueClasses.has(
+          String(classId)
+        )
       ) {
 
         uniqueClasses.set(
+
           String(classId),
+
           String(className)
+
         );
 
       }
@@ -938,24 +855,52 @@ function loadClasses() {
     }
   );
 
-}  /*
-   * Display Class Name
-   * Store Class ID as the value
-   */
+}
 
-  uniqueClasses.forEach(
-    (className, classId) => {
 
-      select.innerHTML +=
-        `<option value="${classId}">
-          ${className}
-        </option>`;
+/* ========================================
+   SELECTOR CHANGE EVENTS
+======================================== */
+
+document
+  .getElementById("ttAcademicYear")
+  .addEventListener(
+    "change",
+    function() {
+
+      loadSemesters();
 
     }
   );
 
-}
-/* PREPARE TIMETABLE */
+
+document
+  .getElementById("ttSemester")
+  .addEventListener(
+    "change",
+    function() {
+
+      loadClasses();
+
+    }
+  );
+
+
+document
+  .getElementById("ttClass")
+  .addEventListener(
+    "change",
+    async function() {
+
+      await prepareTimetable();
+
+    }
+  );
+
+
+/* ========================================
+   PREPARE TIMETABLE
+======================================== */
 
 async function prepareTimetable() {
 
@@ -964,10 +909,12 @@ async function prepareTimetable() {
       "ttAcademicYear"
     ).value;
 
+
   const semester =
     document.getElementById(
       "ttSemester"
     ).value;
+
 
   const classId =
     document.getElementById(
@@ -986,77 +933,133 @@ async function prepareTimetable() {
   }
 
 
-  /* LOAD SUBJECTS */
+  try {
 
-  const subjectResponse =
-    await fetch(
-      API_URL +
-      "?action=subjects" +
-      "&classId=" +
-      encodeURIComponent(classId) +
-      "&semester=" +
-      encodeURIComponent(semester)
+
+    /* LOAD SUBJECTS */
+
+    const subjectResponse =
+      await fetch(
+
+        API_URL +
+
+        "?action=subjects" +
+
+        "&classId=" +
+
+        encodeURIComponent(
+          classId
+        ) +
+
+        "&semester=" +
+
+        encodeURIComponent(
+          semester
+        )
+
+      );
+
+
+    const subjectResult =
+      await subjectResponse.json();
+
+
+    currentSubjects =
+      subjectResult.data || [];
+
+
+    /* LOAD EXISTING TIMETABLE */
+
+    const timetableResponse =
+      await fetch(
+
+        API_URL +
+
+        "?action=timetable" +
+
+        "&academicYear=" +
+
+        encodeURIComponent(
+          academicYear
+        ) +
+
+        "&semester=" +
+
+        encodeURIComponent(
+          semester
+        ) +
+
+        "&classId=" +
+
+        encodeURIComponent(
+          classId
+        )
+
+      );
+
+
+    const timetableResult =
+      await timetableResponse.json();
+
+
+    const existing =
+      timetableResult.data || [];
+
+
+    renderTimetable(existing);
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Unable to prepare timetable."
     );
 
-  const subjectResult =
-    await subjectResponse.json();
-
-  currentSubjects =
-    subjectResult.data || [];
-
-
-  /* LOAD EXISTING TIMETABLE */
-
-  const timetableResponse =
-    await fetch(
-      API_URL +
-      "?action=timetable" +
-      "&academicYear=" +
-      encodeURIComponent(academicYear) +
-      "&semester=" +
-      encodeURIComponent(semester) +
-      "&classId=" +
-      encodeURIComponent(classId)
-    );
-
-  const timetableResult =
-    await timetableResponse.json();
-
-  const existing =
-    timetableResult.data || [];
-
-
-  renderTimetable(existing);
+  }
 
 }
 
 
-/* RENDER TIMETABLE */
+/* ========================================
+   RENDER TIMETABLE
+======================================== */
 
 function renderTimetable(existing) {
 
   const days = [
+
     "Monday",
+
     "Tuesday",
+
     "Wednesday",
+
     "Thursday",
+
     "Friday",
+
     "Saturday"
+
   ];
 
 
   let html =
     '<div class="timetable-wrapper">';
 
+
   html +=
     '<table class="timetable-table">';
 
 
-  /* HEADER */
+  html +=
+    '<tr>';
 
-  html += '<tr>';
 
-  html += '<th>Day</th>';
+  html +=
+    '<th>Day</th>';
+
 
   periodsData.forEach(period => {
 
@@ -1065,40 +1068,60 @@ function renderTimetable(existing) {
         Period ${period["Period No."]}
         <br>
         <small>
-          ${period["Start Time"]} -
+          ${period["Start Time"]}
+          -
           ${period["End Time"]}
         </small>
       </th>`;
 
   });
 
-  html += '</tr>';
 
+  html +=
+    '</tr>';
 
-  /* DAYS */
 
   days.forEach(day => {
 
-    html += `<tr>`;
+    html +=
+      '<tr>';
+
 
     html +=
-      `<td><strong>${day}</strong></td>`;
+      `<td>
+        <strong>
+          ${day}
+        </strong>
+      </td>`;
 
 
     periodsData.forEach(period => {
 
+
       const periodNo =
-        String(period["Period No."]);
-
-
-      const found =
-        existing.find(row =>
-          row["Day"] === day &&
-          String(row["Period No."]) === periodNo
+        String(
+          period["Period No."]
         );
 
 
-      html += `<td>`;
+      const found =
+        existing.find(
+
+          row =>
+
+            row["Day"] === day
+
+            &&
+
+            String(
+              row["Period No."]
+            ) === periodNo
+
+        );
+
+
+      html +=
+        '<td>';
 
 
       html +=
@@ -1109,48 +1132,71 @@ function renderTimetable(existing) {
 
 
       html +=
-        `<option value="">
-          --
-        </option>`;
+        '<option value="">--</option>';
 
 
       currentSubjects.forEach(subject => {
 
+
         const selected =
+
           found &&
-          String(found["Subject ID"]) ===
-          String(subject.subjectId)
-            ? "selected"
-            : "";
+
+          String(
+            found["Subject ID"]
+          ) ===
+
+          String(
+            subject.subjectId
+          )
+
+            ?
+
+            "selected"
+
+            :
+
+            "";
 
 
         html +=
           `<option
+
             value="${subject.subjectId}"
+
             data-name="${subject.subjectName}"
+
             data-type="${subject.type}"
+
             ${selected}
+
           >
+
             ${subject.subjectName}
+
           </option>`;
 
       });
 
 
-      html += `</select>`;
+      html +=
+        '</select>';
 
-      html += `</td>`;
+
+      html +=
+        '</td>';
 
     });
 
 
-    html += `</tr>`;
+    html +=
+      '</tr>';
 
   });
 
 
   html +=
-    `</table></div>`;
+    '</table></div>';
 
 
   document.getElementById(
@@ -1165,7 +1211,9 @@ function renderTimetable(existing) {
 }
 
 
-/* SAVE TIMETABLE */
+/* ========================================
+   SAVE TIMETABLE
+======================================== */
 
 async function saveTimetable() {
 
@@ -1174,10 +1222,12 @@ async function saveTimetable() {
       "ttAcademicYear"
     ).value;
 
+
   const semester =
     document.getElementById(
       "ttSemester"
     ).value;
+
 
   const classId =
     document.getElementById(
@@ -1187,16 +1237,37 @@ async function saveTimetable() {
 
   const selectedClass =
     classesData.find(
+
       row =>
-        String(row["Academic Year"]).trim() ===
-          String(academicYear).trim() &&
 
-        String(row["Semester"]).trim() ===
-          String(semester).trim() &&
+        String(
+          row["Class ID"]
+        ) === String(classId)
 
-        String(row["Class ID"]).trim() ===
-          String(classId).trim()
-    ) || {};
+        &&
+
+        String(
+          row["Academic Year"]
+        ) === String(academicYear)
+
+        &&
+
+        String(
+          row["Semester"]
+        ) === String(semester)
+
+    );
+
+
+  if (!selectedClass) {
+
+    alert(
+      "Selected class could not be found."
+    );
+
+    return;
+
+  }
 
 
   const entries = [];
@@ -1208,7 +1279,12 @@ async function saveTimetable() {
     )
     .forEach(select => {
 
-      if (!select.value) return;
+
+      if (!select.value) {
+
+        return;
+
+      }
 
 
       const option =
@@ -1219,11 +1295,17 @@ async function saveTimetable() {
 
       const period =
         periodsData.find(
+
           p =>
-            String(p["Period No."]) ===
+
+            String(
+              p["Period No."]
+            ) ===
+
             String(
               select.dataset.period
             )
+
         );
 
 
@@ -1232,20 +1314,26 @@ async function saveTimetable() {
         day:
           select.dataset.day,
 
+
         periodNo:
           select.dataset.period,
+
 
         startTime:
           period["Start Time"],
 
+
         endTime:
           period["End Time"],
+
 
         subjectId:
           select.value,
 
+
         subjectName:
           option.dataset.name,
+
 
         type:
           option.dataset.type
@@ -1255,7 +1343,9 @@ async function saveTimetable() {
     });
 
 
-  if (entries.length === 0) {
+  if (
+    entries.length === 0
+  ) {
 
     alert(
       "Please select at least one subject."
@@ -1271,21 +1361,22 @@ async function saveTimetable() {
     action:
       "saveTimetable",
 
+
     academicYear:
       academicYear,
+
 
     semester:
       semester,
 
+
     classId:
       classId,
 
-   className:
-  selectedClass["Class Name"] ||
-  selectedClass["Class"] ||
-  selectedClass["Display Name"] ||
-  selectedClass["Class Display Name"] ||
-  classId,
+
+    className:
+      selectedClass["Class Name"],
+
 
     entries:
       entries
@@ -1295,18 +1386,24 @@ async function saveTimetable() {
 
   try {
 
+
     const response =
       await fetch(
+
         API_URL,
+
         {
 
           method:
             "POST",
 
           body:
-            JSON.stringify(payload)
+            JSON.stringify(
+              payload
+            )
 
         }
+
       );
 
 
@@ -1314,7 +1411,9 @@ async function saveTimetable() {
       await response.json();
 
 
-    if (!result.success) {
+    if (
+      !result.success
+    ) {
 
       throw new Error(
         result.error
@@ -1332,64 +1431,18 @@ async function saveTimetable() {
 
     console.error(error);
 
+
     alert(
+
       "Unable to save timetable: " +
+
       error.message
+
     );
 
   }
 
 }
-
-/* ========================================
-   TIMETABLE SELECTOR EVENTS
-======================================== */
-
-document
-  .getElementById("ttAcademicYear")
-  .addEventListener("change", function() {
-
-    loadSemesters();
-
-    document.getElementById("ttClass").innerHTML =
-      '<option value="">Select Class</option>';
-
-    document.getElementById(
-      "timetableContainer"
-    ).innerHTML = "";
-
-    document.getElementById(
-      "timetableSaveArea"
-    ).style.display = "none";
-
-  });
-
-
-document
-  .getElementById("ttSemester")
-  .addEventListener("change", function() {
-
-    loadClasses();
-
-    document.getElementById(
-      "timetableContainer"
-    ).innerHTML = "";
-
-    document.getElementById(
-      "timetableSaveArea"
-    ).style.display = "none";
-
-  });
-
-
-document
-  .getElementById("ttClass")
-  .addEventListener("change", function() {
-
-    prepareTimetable();
-
-  });
-
 </script>
 
 </body>

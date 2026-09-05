@@ -1,10 +1,15 @@
 // ---- CONFIGURE THIS ONCE: paste your deployed Apps Script Web App URL ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
+const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
 
 async function apiGet(action, params = {}) {
   const qs = new URLSearchParams({ action, ...params }).toString();
   const res = await fetch(`${API_URL}?${qs}`);
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();
+  } catch (err) {
+    throw new Error('The backend did not return valid data — it may be temporarily overloaded (too many requests at once) or needs reauthorizing. Wait a few seconds and try again.');
+  }
   if (!json.success) throw new Error(json.error || 'Request failed');
   return json.data;
 }
@@ -15,7 +20,12 @@ async function apiPost(body) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
     body: JSON.stringify(body)
   });
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();
+  } catch (err) {
+    throw new Error('The backend did not return valid data — it may be temporarily overloaded (too many requests at once) or needs reauthorizing. Wait a few seconds and try again.');
+  }
   if (!json.success) throw new Error(json.error || 'Request failed');
   return json.data;
 }

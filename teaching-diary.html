@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teaching Diary — Academic Dashboard</title>
+<style>
+  :root {
+    --navy: #1f4468; --navy-dark: #16324c; --bg: #eef2f6; --card: #ffffff;
+    --border: #dbe3ec; --text: #24313f; --muted: #64748b; --accent: #2f6690;
+    --ok: #1e7d4f; --err: #b0392f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-dark)); color: #fff;
+    padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+  header a.back {
+    color: #dce8f5; text-decoration: none; font-size: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 999px;
+  }
+  header a.back:hover { background: rgba(255,255,255,0.12); }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 14px; font-size: 1.05rem; color: var(--navy); }
+  .selectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; align-items: end; }
+  .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  select, input, button { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; background: #fff; color: var(--text); }
+  button { background: var(--accent); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+  button:hover { background: var(--navy); }
+  button:disabled { background: #a9b7c4; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  button.secondary:hover { background: #f0f6fb; }
+  button.danger { background: #fff; color: var(--err); border: 1px solid var(--err); padding: 4px 8px; font-size: 0.75rem; width: auto; }
+  .status { margin-top: 12px; font-size: 0.88rem; min-height: 1.2em; }
+  .status.ok { color: var(--ok); } .status.err { color: var(--err); }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar button { width: auto; padding: 9px 16px; }
+  table.diary { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  table.diary th, table.diary td { border: 1px solid var(--border); padding: 5px; text-align: left; vertical-align: top; }
+  table.diary th { background: #f4f7fa; color: var(--navy); }
+  .celltext {
+    min-height: 1.3em; padding: 4px 6px; outline: none;
+    white-space: normal; word-break: break-word; border: none; background: transparent;
+  }
+  .celltext:focus { background: #f0f6fb; box-shadow: inset 0 0 0 1px var(--accent); border-radius: 4px; }
+  .col-narrow { width: 70px; }
+  .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 0.92rem; }
+  .save-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  .save-row button { width: auto; padding: 10px 22px; }
+  @media print {
+    header, .selectors, .toolbar, .save-row, .no-print { display: none !important; }
+    body { background: #fff; }
+    .panel { border: none; padding: 0; }
+    table.diary { font-size: 10px; }
+    table.diary th, table.diary td { border: 1px solid #000 !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Teaching Diary</h1>
+  <a class="back" href="index.html">&larr; Dashboard</a>
+</header>
+
+<main>
+
+  <section class="panel">
+    <h2>Choose class &amp; date</h2>
+    <div class="selectors">
+      <div class="field"><label>Academic Year</label><select id="academicYear" disabled><option>Loading…</option></select></div>
+      <div class="field"><label>Semester</label><select id="semester" disabled><option>Select year first</option></select></div>
+      <div class="field"><label>Class</label><select id="classId" disabled><option>Select semester first</option></select></div>
+      <div class="field"><label>Date</label><input type="date" id="diaryDate"></div>
+      <div class="field">
+        <label>Day Status</label>
+        <select id="dayStatus">
+          <option value="Normal">Normal teaching day</option>
+          <option value="Casual Leave">Casual Leave</option>
+          <option value="On Duty">On Duty (OD)</option>
+          <option value="Holiday">Holiday</option>
+          <option value="Vacation">Vacation</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+      </div>
+      <div class="field" id="otherStatusField" style="display:none;">
+        <label>Custom status word</label>
+        <input type="text" id="otherStatusText" placeholder="e.g. Exam Duty">
+      </div>
+      <div class="field"><button id="loadBtn" disabled>Load / Generate Diary</button></div>
+    </div>
+    <div id="loadStatus" class="status"></div>
+  </section>
+
+  <section class="panel" id="diaryPanel" style="display:none;">
+    <h2 id="diaryTitle">Diary</h2>
+    <div class="toolbar no-print">
+      <button class="secondary" id="regenBtn">Regenerate from Timetable</button>
+      <button class="secondary" id="printBtn">Print / Save as PDF</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="diary" id="diaryTable">
+        <thead>
+          <tr>
+            <th class="col-narrow">Date</th>
+            <th class="col-narrow">Day</th>
+            <th>Class</th>
+            <th>Period/Time</th>
+            <th class="col-narrow">Medium</th>
+            <th class="col-narrow">Theory/<br>Practical</th>
+            <th style="min-width:200px;">Topic Covered</th>
+            <th style="min-width:160px;">Methodology Adopted</th>
+            <th class="col-narrow">No. of Students Attended</th>
+            <th style="min-width:140px;">Teaching Aids Used</th>
+            <th style="min-width:140px;">Student Activity Conducted</th>
+            <th style="min-width:120px;">Remarks</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="diaryBody"></tbody>
+      </table>
+    </div>
+    <div class="save-row no-print">
+      <button id="saveBtn">Save Diary</button>
+    </div>
+    <div id="saveStatus" class="status"></div>
+  </section>
+
+  <div id="emptyMsg" class="empty">Select academic year, semester, class and date, then click "Load / Generate Diary".</div>
+
+</main>
+
+<script src="common.js"></script>
+<script>
+// Embedded pools — cycled through so consecutive periods don't look identical.
+// Edit these lists directly to add/remove methods or aids.
+const METHODOLOGY_LIST = [
+  'Lecture Method', 'Problem-Solving Method', 'Inductive Method', 'Deductive Method',
+  'Analytic Method', 'Synthetic Method', 'Heuristic Method', 'Demonstration Method',
+  'Discussion Method', 'Activity-Oriented Method', 'Discovery Method', 'Team Teaching Method'
+];
+const AIDS_LIST = ['PPT', 'E-Resources', 'NPTEL Videos', 'Smart Board', 'Charts / Models', 'Graph Sheets / Geometry Tools'];
+
+let allClasses = [];
+let periodsData = [];
+let annualPlanCache = {}; // subjectId -> rows
+let syllabusCache = {};   // subjectId -> rows
+
+const yearSelect = document.getElementById('academicYear');
+const semSelect = document.getElementById('semester');
+const classSelect = document.getElementById('classId');
+const dateInput = document.getElementById('diaryDate');
+const dayStatusSelect = document.getElementById('dayStatus');
+const otherStatusField = document.getElementById('otherStatusField');
+const otherStatusText = document.getElementById('otherStatusText');
+const loadBtn = document.getElementById('loadBtn');
+const loadStatus = document.getElementById('loadStatus');
+const diaryPanel = document.getElementById('diaryPanel');
+const diaryTitle = document.getElementById('diaryTitle');
+const diaryBody = document.getElementById('diaryBody');
+const emptyMsg = document.getElementById('emptyMsg');
+const saveBtn = document.getElementById('saveBtn');
+const regenBtn = document.getElementById('regenBtn');
+const printBtn = document.getElementById('printBtn');
+const saveStatus = document.getElementById('saveStatus');
+
+dayStatusSelect.addEventListener('change', () => {
+  otherStatusField.style.display = dayStatusSelect.value === 'Other' ? 'block' : 'none';
+});
+
+async function init() {
+  try {
+    const [classes, periodRows] = await Promise.all([apiGet('classes'), apiGet('periods')]);
+    allClasses = classes;
+    periodsData = periodRows
+      .filter(p => p['Period No.'] !== '' && p['Period No.'] != null)
+      .sort((a, b) => Number(a['Period No.']) - Number(b['Period No.']));
+
+    wireClassCascade({
+      yearSelect, semSelect, classSelect, classes,
+      onReset: () => { loadBtn.disabled = true; },
+      onClassReady: () => { loadBtn.disabled = !dateInput.value ? true : false; }
+    });
+    loadStatus.textContent = '';
+  } catch (err) {
+    loadStatus.textContent = 'Could not load setup data: ' + err.message;
+    loadStatus.className = 'status err';
+  }
+}
+
+dateInput.addEventListener('change', () => {
+  loadBtn.disabled = !(classSelect.value && dateInput.value);
+});
+
+function classRowFor(classId) {
+  return allClasses.find(c => String(c['Class ID']) === String(classId));
+}
+
+function dayNameFor(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+async function getNextTopic(classId, semester, subjectId) {
+  if (!(subjectId in annualPlanCache)) {
+    const academicYear = yearSelect.value;
+    annualPlanCache[subjectId] = await apiGet('annualPlan', { academicYear, semester, classId, subjectId });
+  }
+  const planRows = annualPlanCache[subjectId];
+  const nextFromPlan = planRows.find(r => String(r['Curricular Activity: Whether Conducted']).toLowerCase() !== 'yes');
+  if (nextFromPlan) return nextFromPlan['Curricular Activity: Activity Conducted'];
+
+  if (!(subjectId in syllabusCache)) {
+    syllabusCache[subjectId] = await apiGet('syllabusTopics', { classId, semester, subjectId });
+  }
+  const topics = syllabusCache[subjectId];
+  return topics.length ? topics[0].topic : '';
+}
+
+loadBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
+  if (!academicYear || !semester || !classId || !date) return;
+
+  annualPlanCache = {}; syllabusCache = {};
+  loadStatus.textContent = 'Loading…';
+  loadStatus.className = 'status';
+  loadBtn.disabled = true;
+
+  try {
+    const day = dayNameFor(date);
+    const existing = await apiGet('teachingDiary', { academicYear, semester, classId, date });
+
+    const classRow = classRowFor(classId);
+    diaryTitle.textContent = `${classId} — ${date} (${day})`;
+
+    let rows;
+    if (existing.length > 0) {
+      rows = existing.map(normalizeRow);
+      // Reflect whatever status the saved rows show (all leave rows share the same word).
+      const leaveWord = existing[0]['Topic Covered'];
+      const known = ['Casual Leave', 'On Duty', 'Holiday', 'Vacation'];
+      if (leaveWord && known.includes(leaveWord)) {
+        dayStatusSelect.value = leaveWord;
+      } else if (leaveWord && !existing.some(r => r['Topic Covered'] !== leaveWord)) {
+        dayStatusSelect.value = 'Other'; otherStatusField.style.display = 'block'; otherStatusText.value = leaveWord;
+      } else {
+        dayStatusSelect.value = 'Normal';
+      }
+    } else {
+      const timetableRows = await apiGet('timetable', { academicYear, semester, classId });
+      const todaysPeriods = timetableRows
+        .filter(r => r['Day'] === day)
+        .sort((a, b) => Number(a['Period No.']) - Number(b['Period No.']));
+
+      if (todaysPeriods.length === 0) {
+        loadStatus.textContent = `No periods are timetabled for ${classId} on ${day}s.`;
+        loadStatus.className = 'status err';
+        rows = [];
+      } else {
+        rows = await buildRowsFromTimetable(todaysPeriods, classRow, classId, semester);
+      }
+    }
+
+    renderTable(rows);
+    if (rows.length > 0) {
+      loadStatus.textContent = '';
+      emptyMsg.style.display = 'none';
+      diaryPanel.style.display = 'block';
+    }
+  } catch (err) {
+    loadStatus.textContent = 'Error: ' + err.message;
+    loadStatus.className = 'status err';
+  } finally {
+    loadBtn.disabled = false;
+  }
+});
+
+async function buildRowsFromTimetable(todaysPeriods, classRow, classId, semester) {
+  const status = dayStatusSelect.value;
+  const leaveWord = status === 'Other' ? (otherStatusText.value || 'Other') : status;
+  const isLeaveDay = status !== 'Normal';
+
+  const rows = [];
+  let methodIdx = 0, aidIdx = 0;
+
+  for (const p of todaysPeriods) {
+    const period = periodsData.find(pp => String(pp['Period No.']) === String(p['Period No.']));
+    const timeLabel = period && period['Start Time'] && period['End Time']
+      ? `Period ${p['Period No.']} (${period['Start Time']}–${period['End Time']})`
+      : `Period ${p['Period No.']}`;
+
+    if (isLeaveDay) {
+      rows.push({
+        periodTime: timeLabel, medium: classRow ? classRow['Medium'] : '', type: p['Theory/Practical'] || p['Type'] || '',
+        subjectId: p['Subject ID'], topic: leaveWord, methodology: leaveWord, studentsAttended: leaveWord,
+        aids: leaveWord, studentActivity: leaveWord, remarks: leaveWord
+      });
+      continue;
+    }
+
+    const topic = await getNextTopic(classId, semester, p['Subject ID']);
+    const methodology = [METHODOLOGY_LIST[methodIdx % METHODOLOGY_LIST.length], METHODOLOGY_LIST[(methodIdx + 1) % METHODOLOGY_LIST.length]].join(', ');
+    methodIdx += 2;
+    const aids = 'Black Board, ' + AIDS_LIST[aidIdx % AIDS_LIST.length];
+    aidIdx++;
+
+    rows.push({
+      periodTime: timeLabel,
+      medium: classRow ? classRow['Medium'] : '',
+      type: p['Type'] || p['Theory/Practical'] || '',
+      subjectId: p['Subject ID'],
+      topic, methodology,
+      studentsAttended: '', // filled once the Attendance module exists
+      aids, studentActivity: '', remarks: ''
+    });
+  }
+  return rows;
+}
+
+function normalizeRow(row) {
+  return {
+    periodTime: row['Period/Time'] ?? '',
+    medium: row['Medium'] ?? '',
+    type: row['Theory/Practical'] ?? '',
+    subjectId: row['Subject ID'] ?? '',
+    topic: row['Topic Covered'] ?? '',
+    methodology: row['Methodology Adopted'] ?? '',
+    studentsAttended: row['No. of Students Attended'] ?? '',
+    aids: row['Teaching Aids Used'] ?? '',
+    studentActivity: row['Student Activity Conducted'] ?? '',
+    remarks: row['Remarks'] ?? ''
+  };
+}
+
+function rowHtml(r) {
+  const date = dateInput.value, day = dayNameFor(dateInput.value);
+  return `<tr data-subject-id="${escapeHtml(r.subjectId || '')}">
+    <td>${escapeHtml(date)}</td>
+    <td>${escapeHtml(day)}</td>
+    <td>${escapeHtml(classRowFor(classSelect.value) ? classRowFor(classSelect.value)['Class Name'] : classSelect.value)}</td>
+    <td><div class="f-periodtime celltext" contenteditable="true">${escapeHtml(r.periodTime)}</div></td>
+    <td><div class="f-medium celltext" contenteditable="true">${escapeHtml(r.medium)}</div></td>
+    <td><div class="f-type celltext" contenteditable="true">${escapeHtml(r.type)}</div></td>
+    <td><div class="f-topic celltext" contenteditable="true">${escapeHtml(r.topic)}</div></td>
+    <td><div class="f-methodology celltext" contenteditable="true">${escapeHtml(r.methodology)}</div></td>
+    <td><div class="f-students celltext" contenteditable="true">${escapeHtml(r.studentsAttended)}</div></td>
+    <td><div class="f-aids celltext" contenteditable="true">${escapeHtml(r.aids)}</div></td>
+    <td><div class="f-activity celltext" contenteditable="true">${escapeHtml(r.studentActivity)}</div></td>
+    <td><div class="f-remarks celltext" contenteditable="true">${escapeHtml(r.remarks)}</div></td>
+    <td class="no-print"><button class="danger" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`;
+}
+
+function renderTable(rows) {
+  diaryBody.innerHTML = rows.map(rowHtml).join('');
+}
+
+regenBtn.addEventListener('click', async () => {
+  if (!confirm('This replaces the current table with a freshly generated diary. Continue?')) return;
+  const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
+  const day = dayNameFor(date);
+  annualPlanCache = {}; syllabusCache = {};
+  try {
+    const timetableRows = await apiGet('timetable', { academicYear, semester, classId });
+    const todaysPeriods = timetableRows.filter(r => r['Day'] === day).sort((a, b) => Number(a['Period No.']) - Number(b['Period No.']));
+    const rows = await buildRowsFromTimetable(todaysPeriods, classRowFor(classId), classId, semester);
+    renderTable(rows);
+  } catch (err) {
+    saveStatus.textContent = 'Error: ' + err.message;
+    saveStatus.className = 'status err';
+  }
+});
+
+printBtn.addEventListener('click', () => window.print());
+
+saveBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
+  const day = dayNameFor(date);
+  const classRow = classRowFor(classId);
+  const className = classRow ? classRow['Class Name'] : classId;
+  const isNormalDay = dayStatusSelect.value === 'Normal';
+
+  const entries = [...diaryBody.querySelectorAll('tr')].map(tr => ({
+    subjectId: tr.dataset.subjectId || '',
+    periodTime: tr.querySelector('.f-periodtime').textContent.trim(),
+    medium: tr.querySelector('.f-medium').textContent.trim(),
+    type: tr.querySelector('.f-type').textContent.trim(),
+    topic: tr.querySelector('.f-topic').textContent.trim(),
+    methodology: tr.querySelector('.f-methodology').textContent.trim(),
+    studentsAttended: tr.querySelector('.f-students').textContent.trim(),
+    aids: tr.querySelector('.f-aids').textContent.trim(),
+    studentActivity: tr.querySelector('.f-activity').textContent.trim(),
+    remarks: tr.querySelector('.f-remarks').textContent.trim(),
+    markConducted: isNormalDay
+  }));
+
+  saveBtn.disabled = true;
+  saveStatus.textContent = 'Saving…';
+  saveStatus.className = 'status';
+
+  try {
+    await apiPost({ action: 'saveTeachingDiary', academicYear, semester, classId, className, date, day, entries });
+    saveStatus.textContent = 'Diary saved.' + (isNormalDay ? ' Covered topics were marked conducted on the Annual Plan.' : '');
+    saveStatus.className = 'status ok';
+  } catch (err) {
+    saveStatus.textContent = 'Error saving: ' + err.message;
+    saveStatus.className = 'status err';
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+init();
+</script>
+
+</body>
+</html>

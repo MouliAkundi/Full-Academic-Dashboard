@@ -174,7 +174,8 @@ dayStatusSelect.addEventListener('change', () => {
 
 async function init() {
   try {
-    const [classes, periodRows] = await Promise.all([apiGet('classes'), apiGet('periods')]);
+    const classes = await apiGet('classes');
+    const periodRows = await apiGet('periods');
     allClasses = classes;
     periodsData = periodRows
       .filter(p => p['Period No.'] !== '' && p['Period No.'] != null)

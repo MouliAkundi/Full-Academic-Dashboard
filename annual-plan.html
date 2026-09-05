@@ -57,15 +57,37 @@
   .save-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
   .save-row button { width: auto; padding: 10px 22px; }
   .table-scroll { overflow-x: auto; }
+
+  .print-letterhead { display: none; }
+  .print-signatures { display: none; }
+
   @page { size: landscape; margin: 10mm; }
   @media print {
     header, .selectors, .toolbar, .save-row, .no-print { display: none !important; }
-    body { background: #fff; }
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .panel { border: none; padding: 0; }
+
+    .print-letterhead {
+      display: block; text-align: center; margin-bottom: 10px;
+      border-bottom: 2px solid #000; padding-bottom: 8px;
+    }
+    .print-letterhead .ph-line1 { font-size: 12px; }
+    .print-letterhead .ph-line2 { font-size: 18px; font-weight: 700; margin: 2px 0; }
+    .print-letterhead .ph-line3 { font-size: 13px; }
+    .print-letterhead .ph-title { font-size: 13px; font-weight: 700; margin-top: 6px; text-decoration: underline; }
+
     table.plan { font-size: 9px; width: 100%; table-layout: fixed; }
+    table.plan th, table.plan td { border: 1px solid #000 !important; }
     table.plan input[type="checkbox"] { display: none; }
     .print-yesno { display: inline; }
     .table-scroll { overflow: visible !important; }
+
+    .print-signatures {
+      display: flex; justify-content: space-between; margin-top: 40px;
+      page-break-inside: avoid;
+    }
+    .print-signatures .sig-block { width: 30%; text-align: center; font-size: 11px; }
+    .print-signatures .sig-line { border-top: 1px solid #000; margin-bottom: 4px; height: 40px; }
   }
 </style>
 </head>
@@ -91,6 +113,12 @@
   </section>
 
   <section class="panel" id="planPanel" style="display:none;">
+    <div class="print-letterhead">
+      <div class="ph-line1" id="phLine1">Commissionerate of Collegiate Education</div>
+      <div class="ph-line2" id="phLine2">Government Degree College, Vizianagaram</div>
+      <div class="ph-line3" id="phLine3">Department of Mathematics</div>
+      <div class="ph-title">Annual Curricular Plan</div>
+    </div>
     <h2 id="planTitle">Plan</h2>
     <div class="toolbar no-print">
       <button class="secondary" id="regenBtn">Regenerate from Syllabus</button>
@@ -120,6 +148,11 @@
         </thead>
         <tbody id="planBody"></tbody>
       </table>
+    </div>
+    <div class="print-signatures">
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Lecturer</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Head of the Department</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Principal</div></div>
     </div>
     <div class="save-row no-print">
       <button id="saveBtn">Save Plan</button>
@@ -157,8 +190,21 @@ const printBtn = document.getElementById('printBtn');
 
 async function init() {
   try {
-    const classes = await apiGet('classes');
+    const [classes, configRows] = await Promise.all([apiGet('classes'), apiGet('config')]);
     allClasses = classes;
+
+    const config = {};
+    configRows.forEach(row => { config[row.Setting] = row.Value; });
+    if (config['Commissionerate / Department Name']) {
+      document.getElementById('phLine1').textContent = config['Commissionerate / Department Name'];
+    }
+    if (config['Institution Name']) {
+      document.getElementById('phLine2').textContent = config['Institution Name'];
+    }
+    // Header 3 ("Department of Mathematics") has no Config sheet equivalent yet —
+    // edit the hardcoded text in the HTML above, or add a "Department Name" row
+    // to Config and fetch it here the same way, if you want it configurable too.
+
     wireClassCascade({
       yearSelect, semSelect, classSelect, classes,
       onReset: () => { setSelectOptions(subjectSelect, [], 'Select class first'); loadBtn.disabled = true; },
@@ -279,6 +325,47 @@ const CO_CURRICULAR_ACTIVITIES = [
 ];
 
 /**
+ * Builds week buckets that never cross a month boundary: within each month,
+ * Week 1 = days 1-7, Week 2 = days 8-14, etc. A semester starting mid-month
+ * (e.g. 22 June) only ever produces the tail weeks that actually fall inside
+ * it (Week 4 = 22-28, Week 5 = 29-30) — never a fabricated "Week 1-4".
+ * A block is skipped only if an Academic Calendar row tagged
+ * Holiday/Vacation/Exam fully covers that block's date range.
+ */
+function buildMonthWeeks(startDate, endDate, calendarRows) {
+  const weeks = [];
+  let cursor = new Date(startDate);
+
+  while (cursor <= endDate) {
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const weekOfMonth = Math.ceil(cursor.getDate() / 7);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const blockEnd = new Date(year, month, Math.min(weekOfMonth * 7, daysInMonth));
+    const segmentEnd = blockEnd < endDate ? blockEnd : new Date(endDate);
+
+    const isFullBlockOff = calendarRows.some(h => {
+      if (!/holiday|vacation|exam/i.test(h['Day Type'] || '')) return false;
+      const from = new Date(h['From Date']), to = new Date(h['To Date']);
+      if (isNaN(from) || isNaN(to)) return false;
+      return from <= cursor && to >= segmentEnd;
+    });
+
+    if (!isFullBlockOff) {
+      weeks.push({
+        month: cursor.toLocaleString('default', { month: 'long' }),
+        week: weekOfMonth
+      });
+    }
+
+    cursor = new Date(segmentEnd);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return weeks;
+}
+
+/**
  * Spreads syllabus topics across the semester's weeks. A week runs Mon-Sat
  * and is skipped only if an Academic Calendar row tagged Holiday/Vacation/Exam
  * fully covers that whole week. Topics fill each week up to that subject's
@@ -293,31 +380,9 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
   const endDate = new Date(semRow['End Date']);
   if (isNaN(startDate) || isNaN(endDate)) return [];
 
-  const cursor = new Date(startDate);
-  const dow = cursor.getDay();
-  cursor.setDate(cursor.getDate() + (dow === 0 ? -6 : 1 - dow)); // snap to Monday
-
-  const weeks = [];
-  let weekNum = 1;
-  while (cursor <= endDate) {
-    const weekStart = new Date(cursor);
-    const weekEnd = new Date(cursor); weekEnd.setDate(weekEnd.getDate() + 5);
-
-    const isFullWeekOff = calendarRows.some(h => {
-      if (!/holiday|vacation|exam/i.test(h['Day Type'] || '')) return false;
-      const from = new Date(h['From Date']), to = new Date(h['To Date']);
-      if (isNaN(from) || isNaN(to)) return false;
-      return from <= weekStart && to >= weekEnd;
-    });
-
-    if (!isFullWeekOff) {
-      weeks.push({ weekNum, month: weekStart.toLocaleString('default', { month: 'long' }) });
-      weekNum++;
-    }
-    cursor.setDate(cursor.getDate() + 7);
-  }
+  const weeks = buildMonthWeeks(startDate, endDate, calendarRows);
   if (weeks.length === 0) {
-    weeks.push({ weekNum: 1, month: startDate.toLocaleString('default', { month: 'long' }) });
+    weeks.push({ week: 1, month: startDate.toLocaleString('default', { month: 'long' }) });
   }
 
   const rows = [];
@@ -331,10 +396,11 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
       wi++; usedHoursThisWeek = 0;
     }
     const w = weeks[Math.min(wi, weeks.length - 1)];
+    const weekKey = w.month + '-' + w.week;
 
     let coActivity = '', coHours = '';
-    if (!seenWeeks.has(w.weekNum)) {
-      seenWeeks.add(w.weekNum);
+    if (!seenWeeks.has(weekKey)) {
+      seenWeeks.add(weekKey);
       coActivity = CO_CURRICULAR_ACTIVITIES[coIndex % CO_CURRICULAR_ACTIVITIES.length];
       coHours = 1;
       coIndex++;
@@ -342,7 +408,7 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
 
     rows.push({
       unit: t.unit, activity: t.topic, hours: t.hoursRequired,
-      month: w.month, week: w.weekNum, conducted: '', alternateDate: '',
+      month: w.month, week: w.week, conducted: '', alternateDate: '',
       coActivity, coHours, coConducted: '', coAlternateDate: ''
     });
     usedHoursThisWeek += hrs;
@@ -352,16 +418,17 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
   // (up to the semester's actual end date) with Revision instead of leaving them blank.
   for (let i = wi + 1; i < weeks.length; i++) {
     const w = weeks[i];
+    const weekKey = w.month + '-' + w.week;
     let coActivity = '', coHours = '';
-    if (!seenWeeks.has(w.weekNum)) {
-      seenWeeks.add(w.weekNum);
+    if (!seenWeeks.has(weekKey)) {
+      seenWeeks.add(weekKey);
       coActivity = CO_CURRICULAR_ACTIVITIES[coIndex % CO_CURRICULAR_ACTIVITIES.length];
       coHours = 1;
       coIndex++;
     }
     rows.push({
       unit: '', activity: 'Revision', hours: periodsPerWeek,
-      month: w.month, week: w.weekNum, conducted: '', alternateDate: '',
+      month: w.month, week: w.week, conducted: '', alternateDate: '',
       coActivity, coHours, coConducted: '', coAlternateDate: ''
     });
   }

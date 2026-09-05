@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Timetable — Academic Dashboard</title>
+<style>
+  :root {
+    --navy: #1f4468;
+    --navy-dark: #16324c;
+    --bg: #eef2f6;
+    --card: #ffffff;
+    --border: #dbe3ec;
+    --text: #24313f;
+    --muted: #64748b;
+    --accent: #2f6690;
+    --ok: #1e7d4f;
+    --err: #b0392f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-dark));
+    color: #fff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  header a.back {
+    color: #dce8f5;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  header a.back:hover { background: rgba(255,255,255,0.12); }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .panel h2 {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    color: var(--navy);
+  }
+
+  .selectors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  select, button {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.92rem;
+    background: #fff;
+    color: var(--text);
+  }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { background: var(--navy); }
+  button:disabled { background: #a9b7c4; cursor: not-allowed; }
+  button.secondary {
+    background: #fff;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  button.secondary:hover { background: #f0f6fb; }
+
+  .status {
+    margin-top: 12px;
+    font-size: 0.88rem;
+    min-height: 1.2em;
+  }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  table.grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  table.grid th, table.grid td {
+    border: 1px solid var(--border);
+    padding: 6px;
+    text-align: center;
+  }
+  table.grid th {
+    background: #f4f7fa;
+    color: var(--navy);
+    font-weight: 600;
+  }
+  table.grid td.period-label {
+    background: #f9fbfc;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  table.grid select {
+    font-size: 0.8rem;
+    padding: 5px 4px;
+  }
+
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 30px 10px;
+    font-size: 0.92rem;
+  }
+
+  .save-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .save-row button { width: auto; padding: 10px 22px; }
+
+  @media (max-width: 640px) {
+    table.grid { font-size: 0.72rem; }
+    table.grid select { font-size: 0.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>My Timetable</h1>
+  <a class="back" href="index.html">&larr; Dashboard</a>
+</header>
+
+<main>
+
+  <section class="panel">
+    <h2>Choose class</h2>
+    <div class="selectors">
+      <div class="field">
+        <label for="academicYear">Academic Year</label>
+        <select id="academicYear" disabled><option>Loading…</option></select>
+      </div>
+      <div class="field">
+        <label for="semester">Semester</label>
+        <select id="semester" disabled><option>Select year first</option></select>
+      </div>
+      <div class="field">
+        <label for="classId">Class</label>
+        <select id="classId" disabled><option>Select semester first</option></select>
+      </div>
+      <div class="field">
+        <button id="loadBtn" disabled>Load Timetable</button>
+      </div>
+    </div>
+    <div id="loadStatus" class="status"></div>
+  </section>
+
+  <section class="panel" id="gridPanel" style="display:none;">
+    <h2 id="gridTitle">Weekly Timetable</h2>
+    <div id="gridWrap" style="overflow-x:auto;"></div>
+    <div class="save-row">
+      <button class="secondary" id="clearBtn">Clear All</button>
+      <button id="saveBtn">Save Timetable</button>
+    </div>
+    <div id="saveStatus" class="status"></div>
+  </section>
+
+  <div id="emptyMsg" class="empty">Select an academic year, semester and class, then click "Load Timetable".</div>
+
+</main>
+
+<script>
+// ---- CONFIGURE THIS: paste your deployed Apps Script Web App URL below ----
+const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+let allClasses = [];
+let allSemesters = [];
+let periods = [];
+let subjects = [];
+let existingTimetable = [];
+
+const yearSelect = document.getElementById('academicYear');
+const semSelect = document.getElementById('semester');
+const classSelect = document.getElementById('classId');
+const loadBtn = document.getElementById('loadBtn');
+const loadStatus = document.getElementById('loadStatus');
+const gridPanel = document.getElementById('gridPanel');
+const gridWrap = document.getElementById('gridWrap');
+const gridTitle = document.getElementById('gridTitle');
+const emptyMsg = document.getElementById('emptyMsg');
+const saveBtn = document.getElementById('saveBtn');
+const clearBtn = document.getElementById('clearBtn');
+const saveStatus = document.getElementById('saveStatus');
+
+async function apiGet(action, params = {}) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${API_URL}?${qs}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Request failed');
+  return json.data;
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Request failed');
+  return json.data;
+}
+
+function setOptions(select, items, placeholder) {
+  select.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.textContent = placeholder;
+  ph.value = '';
+  select.appendChild(ph);
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.value;
+    opt.textContent = item.label;
+    select.appendChild(opt);
+  });
+  select.disabled = items.length === 0;
+}
+
+async function init() {
+  try {
+    const [classes, semesters, periodRows] = await Promise.all([
+      apiGet('classes'),
+      apiGet('semesters'),
+      apiGet('periods')
+    ]);
+    allClasses = classes;
+    allSemesters = semesters;
+    periods = periodRows
+      .filter(p => p['Period No.'] !== '' && p['Period No.'] != null)
+      .sort((a, b) => Number(a['Period No.']) - Number(b['Period No.']));
+
+    const years = [...new Set(classes.map(c => c['Academic Year']))].filter(Boolean);
+    setOptions(yearSelect, years.map(y => ({ value: y, label: y })), 'Select Academic Year');
+    yearSelect.disabled = false;
+    loadStatus.textContent = '';
+  } catch (err) {
+    loadStatus.textContent = 'Could not load setup data: ' + err.message;
+    loadStatus.className = 'status err';
+  }
+}
+
+yearSelect.addEventListener('change', () => {
+  const year = yearSelect.value;
+  classSelect.disabled = true;
+  loadBtn.disabled = true;
+  if (!year) {
+    setOptions(semSelect, [], 'Select year first');
+    return;
+  }
+  const sems = [...new Set(
+    allClasses.filter(c => String(c['Academic Year']) === year).map(c => c['Semester'])
+  )].filter(s => s !== '' && s != null);
+  setOptions(semSelect, sems.map(s => ({ value: s, label: 'Semester ' + s })), 'Select Semester');
+});
+
+semSelect.addEventListener('change', () => {
+  const year = yearSelect.value;
+  const sem = semSelect.value;
+  loadBtn.disabled = true;
+  if (!sem) {
+    setOptions(classSelect, [], 'Select semester first');
+    return;
+  }
+  const seen = new Set();
+  const classesForSem = allClasses.filter(c =>
+    String(c['Academic Year']) === year && String(c['Semester']) === sem
+  ).filter(c => {
+    if (seen.has(c['Class ID'])) return false;
+    seen.add(c['Class ID']);
+    return true;
+  });
+  setOptions(
+    classSelect,
+    classesForSem.map(c => ({ value: c['Class ID'], label: `${c['Class ID']} (Sec ${c['Section'] ?? '-'})` })),
+    'Select Class'
+  );
+});
+
+classSelect.addEventListener('change', () => {
+  loadBtn.disabled = !classSelect.value;
+});
+
+loadBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value;
+  const semester = semSelect.value;
+  const classId = classSelect.value;
+  if (!academicYear || !semester || !classId) return;
+
+  loadStatus.textContent = 'Loading…';
+  loadStatus.className = 'status';
+  loadBtn.disabled = true;
+
+  try {
+    const [subjectList, timetableRows] = await Promise.all([
+      apiGet('subjects', { classId, semester }),
+      apiGet('timetable', { academicYear, semester, classId })
+    ]);
+    subjects = subjectList;
+    existingTimetable = timetableRows;
+
+    if (periods.length === 0) {
+      loadStatus.textContent = 'No periods are defined yet in "Period Setting" — add rows there first.';
+      loadStatus.className = 'status err';
+      gridPanel.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+
+    renderGrid(classId, academicYear, semester);
+    loadStatus.textContent = '';
+    emptyMsg.style.display = 'none';
+    gridPanel.style.display = 'block';
+  } catch (err) {
+    loadStatus.textContent = 'Error: ' + err.message;
+    loadStatus.className = 'status err';
+  } finally {
+    loadBtn.disabled = false;
+  }
+});
+
+function subjectOptionsHtml(selectedSubjectId) {
+  let html = `<option value="">— Free —</option>`;
+  subjects.forEach(s => {
+    const sel = String(s.subjectId) === String(selectedSubjectId) ? 'selected' : '';
+    html += `<option value="${s.subjectId}" data-name="${escapeHtml(s.subjectName)}" data-type="${escapeHtml(s.type || '')}" ${sel}>${escapeHtml(s.subjectName)} (${escapeHtml(s.type || '')})</option>`;
+  });
+  return html;
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[m]));
+}
+
+function renderGrid(classId, academicYear, semester) {
+  gridTitle.textContent = `Weekly Timetable — ${classId} (${academicYear}, Sem ${semester})`;
+
+  const findExisting = (day, periodNo) => existingTimetable.find(row =>
+    row['Day'] === day && String(row['Period No.']) === String(periodNo)
+  );
+
+  let html = '<table class="grid"><thead><tr><th>Period</th>';
+  DAYS.forEach(d => html += `<th>${d}</th>`);
+  html += '</tr></thead><tbody>';
+
+  periods.forEach(p => {
+    const periodNo = p['Period No.'];
+    const timeLabel = (p['Start Time'] && p['End Time'])
+      ? `${p['Start Time']}–${p['End Time']}`
+      : '';
+    html += `<tr><td class="period-label">Period ${periodNo}${timeLabel ? '<br>' + escapeHtml(timeLabel) : ''}</td>`;
+    DAYS.forEach(day => {
+      const existing = findExisting(day, periodNo);
+      const selectedId = existing ? existing['Subject ID'] : '';
+      html += `<td><select data-day="${day}" data-period="${periodNo}" data-start="${p['Start Time'] || ''}" data-end="${p['End Time'] || ''}">${subjectOptionsHtml(selectedId)}</select></td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  gridWrap.innerHTML = html;
+}
+
+clearBtn.addEventListener('click', () => {
+  gridWrap.querySelectorAll('select').forEach(sel => { sel.value = ''; });
+  saveStatus.textContent = '';
+});
+
+saveBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value;
+  const semester = semSelect.value;
+  const classId = classSelect.value;
+  const classRow = allClasses.find(c => String(c['Class ID']) === classId);
+  const className = classRow ? classRow['Class Name'] : classId;
+
+  const entries = [];
+  gridWrap.querySelectorAll('select').forEach(sel => {
+    if (!sel.value) return; // skip "Free" periods
+    const opt = sel.options[sel.selectedIndex];
+    entries.push({
+      day: sel.dataset.day,
+      periodNo: sel.dataset.period,
+      startTime: sel.dataset.start,
+      endTime: sel.dataset.end,
+      subjectId: sel.value,
+      subjectName: opt.dataset.name,
+      type: opt.dataset.type
+    });
+  });
+
+  saveBtn.disabled = true;
+  saveStatus.textContent = 'Saving…';
+  saveStatus.className = 'status';
+
+  try {
+    await apiPost({
+      action: 'saveTimetable',
+      academicYear, semester, classId, className,
+      entries
+    });
+    saveStatus.textContent = 'Timetable saved.';
+    saveStatus.className = 'status ok';
+  } catch (err) {
+    saveStatus.textContent = 'Error saving: ' + err.message;
+    saveStatus.className = 'status err';
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+init();
+</script>
+
+</body>
+</html>

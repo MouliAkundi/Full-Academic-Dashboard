@@ -107,8 +107,13 @@
       <div class="field"><label>Semester</label><select id="semester" disabled><option>Select year first</option></select></div>
       <div class="field"><label>Class</label><select id="classId" disabled><option>Select semester first</option></select></div>
       <div class="field"><label>Subject</label><select id="subjectId" disabled><option>Select class first</option></select></div>
+      <div class="field">
+        <label>Periods/Week (for pacing)</label>
+        <input type="number" id="periodsPerWeek" min="1" value="3">
+      </div>
       <div class="field"><button id="loadBtn" disabled>Load Plan</button></div>
     </div>
+    <div id="periodsHint" style="font-size:0.78rem;color:var(--muted);margin-top:6px;"></div>
     <div id="loadStatus" class="status"></div>
   </section>
 
@@ -167,6 +172,7 @@
 <script src="common.js"></script>
 <script>
 let allClasses = [];
+let allSemesters = [];
 let currentTopics = [];
 let currentSemRow = null;
 let currentCalendar = [];
@@ -190,8 +196,9 @@ const printBtn = document.getElementById('printBtn');
 
 async function init() {
   try {
-    const [classes, configRows] = await Promise.all([apiGet('classes'), apiGet('config')]);
+    const [classes, semesters, configRows] = await Promise.all([apiGet('classes'), apiGet('semesters'), apiGet('config')]);
     allClasses = classes;
+    allSemesters = semesters;
 
     const config = {};
     configRows.forEach(row => { config[row.Setting] = row.Value; });
@@ -243,18 +250,24 @@ loadBtn.addEventListener('click', async () => {
   loadBtn.disabled = true;
 
   try {
-    const [existing, topics, semesters, calendarRows, timetableRows] = await Promise.all([
-      apiGet('annualPlan', { academicYear, semester, classId, subjectId }),
-      apiGet('syllabusTopics', { classId, semester, subjectId }),
-      apiGet('semesters'),
-      apiGet('calendar', { academicYear, semester }),
-      apiGet('timetable', { academicYear, semester, classId })
-    ]);
+    // Sequential, not parallel — Apps Script (especially on personal Google
+    // accounts) can reject a burst of simultaneous requests with an HTML
+    // error page instead of running the script at all.
+    const existing = await apiGet('annualPlan', { academicYear, semester, classId, subjectId });
+    const topics = await apiGet('syllabusTopics', { classId, semester, subjectId });
+    const calendarRows = await apiGet('calendar', { academicYear, semester });
+    const timetableRows = await apiGet('timetable', { academicYear, semester, classId });
 
     currentTopics = topics;
-    currentSemRow = semesters.find(s => String(s['Academic Year']) === academicYear && String(s['Semester']) === semester);
+    currentSemRow = allSemesters.find(s => String(s['Academic Year']) === academicYear && String(s['Semester']) === semester);
     currentCalendar = calendarRows;
     currentTimetable = timetableRows;
+
+    const autoPeriods = timetableRows.filter(r => String(r['Subject ID']) === String(subjectId)).length;
+    document.getElementById('periodsPerWeek').value = autoPeriods || 3;
+    document.getElementById('periodsHint').textContent = autoPeriods
+      ? `Based on your Timetable, this subject has ${autoPeriods} period(s)/week. Adjust the number above if that looks wrong, then hit "Regenerate from Syllabus".`
+      : 'This subject isn\'t in the Timetable yet, so pacing defaults to 3 periods/week — set the real number above before generating.';
 
     const subjectOpt = subjectSelect.options[subjectSelect.selectedIndex];
     const subjectName = subjectOpt.textContent.replace(/\s*\([^)]*\)$/, '');
@@ -267,7 +280,7 @@ loadBtn.addEventListener('click', async () => {
     if (existing.length > 0) {
       rows = existing.map(normalizeRow);
     } else if (currentSemRow) {
-      rows = generatePlanRows(topics, currentSemRow, calendarRows, timetableRows, subjectId);
+      rows = generatePlanRows(topics, currentSemRow, calendarRows, Number(document.getElementById('periodsPerWeek').value) || 3, subjectId);
       if (rows.length === 0) {
         loadStatus.textContent = 'No syllabus topics found for this subject/semester yet — add them to the Syllabus sheet first.';
         loadStatus.className = 'status err';
@@ -371,11 +384,8 @@ function buildMonthWeeks(startDate, endDate, calendarRows) {
  * fully covers that whole week. Topics fill each week up to that subject's
  * periods-per-week (from the Timetable, default 3) before moving to the next.
  */
-function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId) {
+function generatePlanRows(topics, semRow, calendarRows, periodsPerWeek, subjectId) {
   if (!topics.length) return [];
-
-  const periodsPerWeek = timetableRows.filter(r => String(r['Subject ID']) === String(subjectId)).length || 3;
-
   const startDate = new Date(semRow['Start Date']);
   const endDate = new Date(semRow['End Date']);
   if (isNaN(startDate) || isNaN(endDate)) return [];
@@ -517,7 +527,7 @@ function renderTable(rows) {
 regenBtn.addEventListener('click', () => {
   if (!currentSemRow) { saveStatus.textContent = 'No semester dates loaded.'; saveStatus.className = 'status err'; return; }
   if (!confirm('This replaces the current table with a fresh auto-generated plan. Continue?')) return;
-  const rows = generatePlanRows(currentTopics, currentSemRow, currentCalendar, currentTimetable, subjectSelect.value);
+  const rows = generatePlanRows(currentTopics, currentSemRow, currentCalendar, Number(document.getElementById('periodsPerWeek').value) || 3, subjectSelect.value);
   renderTable(rows);
 });
 

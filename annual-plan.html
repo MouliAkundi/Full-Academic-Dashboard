@@ -44,6 +44,12 @@
   table.plan th { background: #f4f7fa; color: var(--navy); position: sticky; top: 0; }
   table.plan input { padding: 4px 5px; font-size: 0.78rem; }
   table.plan input[type="checkbox"] { width: auto; }
+  .celltext {
+    min-height: 1.3em; padding: 4px 6px; outline: none;
+    white-space: normal; word-break: break-word; border: none; background: transparent;
+  }
+  .celltext:focus { background: #f0f6fb; box-shadow: inset 0 0 0 1px var(--accent); border-radius: 4px; }
+  .print-yesno { display: none; }
   .col-narrow { width: 60px; }
   .col-activity { min-width: 220px; }
   .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 0.92rem; }
@@ -54,6 +60,8 @@
     body { background: #fff; }
     .panel { border: none; padding: 0; }
     table.plan { font-size: 10px; }
+    table.plan input[type="checkbox"] { display: none; }
+    .print-yesno { display: inline; }
   }
 </style>
 </head>
@@ -336,6 +344,24 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
     usedHoursThisWeek += hrs;
   });
 
+  // Syllabus finished before the semester did — fill the remaining weeks
+  // (up to the semester's actual end date) with Revision instead of leaving them blank.
+  for (let i = wi + 1; i < weeks.length; i++) {
+    const w = weeks[i];
+    let coActivity = '', coHours = '';
+    if (!seenWeeks.has(w.weekNum)) {
+      seenWeeks.add(w.weekNum);
+      coActivity = CO_CURRICULAR_ACTIVITIES[coIndex % CO_CURRICULAR_ACTIVITIES.length];
+      coHours = 1;
+      coIndex++;
+    }
+    rows.push({
+      unit: '', activity: 'Revision', hours: periodsPerWeek,
+      month: w.month, week: w.weekNum, conducted: '', alternateDate: '',
+      coActivity, coHours, coConducted: '', coAlternateDate: ''
+    });
+  }
+
   return rows;
 }
 
@@ -353,17 +379,38 @@ function rowHtml(r) {
     <td><input class="f-unit" value="${escapeHtml(r.unit)}"></td>
     <td><input class="f-month" value="${escapeHtml(r.month)}"></td>
     <td><input class="f-week" type="number" value="${escapeHtml(r.week)}"></td>
-    <td><input class="f-activity" value="${escapeHtml(r.activity)}"></td>
+    <td><div class="f-activity celltext" contenteditable="true">${escapeHtml(r.activity)}</div></td>
     <td><input class="f-hours" type="number" step="0.5" value="${escapeHtml(r.hours)}"></td>
-    <td style="text-align:center;"><input class="f-conducted" type="checkbox" ${checked(r.conducted)}></td>
+    <td style="text-align:center;">
+      <input class="f-conducted" type="checkbox" ${checked(r.conducted)}>
+      <span class="print-yesno"></span>
+    </td>
     <td><input class="f-altdate" type="date" value="${escapeHtml(r.alternateDate)}"></td>
-    <td><input class="f-coactivity" value="${escapeHtml(r.coActivity)}"></td>
+    <td><div class="f-coactivity celltext" contenteditable="true">${escapeHtml(r.coActivity)}</div></td>
     <td><input class="f-cohours" type="number" step="0.5" value="${escapeHtml(r.coHours)}"></td>
-    <td style="text-align:center;"><input class="f-coconducted" type="checkbox" ${checked(r.coConducted)}></td>
+    <td style="text-align:center;">
+      <input class="f-coconducted" type="checkbox" ${checked(r.coConducted)}>
+      <span class="print-yesno"></span>
+    </td>
     <td><input class="f-coaltdate" type="date" value="${escapeHtml(r.coAlternateDate)}"></td>
     <td class="no-print"><button class="danger" onclick="this.closest('tr').remove()">✕</button></td>
   </tr>`;
 }
+
+// Right before printing, swap each Done checkbox for a plain "Yes"/"No" label
+// so the physical copy reads as text, not as an interactive control.
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('#planBody tr').forEach(tr => {
+    [['.f-conducted'], ['.f-coconducted']].forEach(([sel]) => {
+      const box = tr.querySelector(sel);
+      if (!box) return;
+      const span = box.nextElementSibling;
+      if (span && span.classList.contains('print-yesno')) {
+        span.textContent = box.checked ? 'Yes' : 'No';
+      }
+    });
+  });
+});
 
 function renderTable(rows) {
   planBody.innerHTML = rows.map(rowHtml).join('');
@@ -396,13 +443,13 @@ saveBtn.addEventListener('click', async () => {
     academicYear, semester, classId, subjectId,
     className, semesterName: 'Semester ' + semester, subjectName,
     unit: tr.querySelector('.f-unit').value,
-    activity: tr.querySelector('.f-activity').value,
+    activity: tr.querySelector('.f-activity').textContent.trim(),
     hours: tr.querySelector('.f-hours').value,
     month: tr.querySelector('.f-month').value,
     week: tr.querySelector('.f-week').value,
     conducted: tr.querySelector('.f-conducted').checked ? 'Yes' : 'No',
     alternateDate: tr.querySelector('.f-altdate').value,
-    coActivity: tr.querySelector('.f-coactivity').value,
+    coActivity: tr.querySelector('.f-coactivity').textContent.trim(),
     coHours: tr.querySelector('.f-cohours').value,
     coConducted: tr.querySelector('.f-coconducted').checked ? 'Yes' : 'No',
     coAlternateDate: tr.querySelector('.f-coaltdate').value

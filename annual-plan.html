@@ -89,17 +89,20 @@
       <table class="plan" id="planTable">
         <thead>
           <tr>
+            <th>Class</th>
+            <th>Semester</th>
+            <th>Subject</th>
             <th class="col-narrow">Unit</th>
-            <th class="col-activity">Curricular Activity</th>
-            <th class="col-narrow">Hrs</th>
             <th>Month</th>
             <th class="col-narrow">Week</th>
-            <th class="col-narrow">Done?</th>
-            <th>Alt. Date</th>
-            <th class="col-activity">Co-Curricular Activity</th>
-            <th class="col-narrow">Co Hrs</th>
-            <th class="col-narrow">Done?</th>
-            <th>Co Alt. Date</th>
+            <th class="col-activity">Curricular Activity: Activity Conducted</th>
+            <th class="col-narrow">Curricular Activity: Hours Allotted</th>
+            <th class="col-narrow">Curricular Activity: Whether Conducted</th>
+            <th>Curricular Activity: If not, Alternate Date</th>
+            <th class="col-activity">Co-Curricular Activity: Activity Conducted</th>
+            <th class="col-narrow">Co-Curricular Activity: Hours Allotted</th>
+            <th class="col-narrow">Co-Curricular Activity: Whether Conducted</th>
+            <th>Co-Curricular Activity: If not, Alternate Date</th>
             <th class="no-print"></th>
           </tr>
         </thead>
@@ -198,7 +201,9 @@ loadBtn.addEventListener('click', async () => {
     const subjectOpt = subjectSelect.options[subjectSelect.selectedIndex];
     const subjectName = subjectOpt.textContent.replace(/\s*\([^)]*\)$/, '');
     const classRow = classRowFor(classId);
+    const className = classRow ? classRow['Class Name'] : classId;
     planTitle.textContent = `${classId} — ${subjectName} (${academicYear}, Semester ${semester})`;
+    rowContextText = { className, semesterName: 'Semester ' + semester, subjectName };
 
     let rows;
     if (existing.length > 0) {
@@ -232,18 +237,34 @@ loadBtn.addEventListener('click', async () => {
 function normalizeRow(row) {
   return {
     unit: row.unit ?? row['Unit'] ?? '',
-    activity: row.activity ?? row['Curricular Activity'] ?? '',
-    hours: row.hours ?? row['Hours Allotted'] ?? '',
+    activity: row.activity ?? row['Curricular Activity: Activity Conducted'] ?? '',
+    hours: row.hours ?? row['Curricular Activity: Hours Allotted'] ?? '',
     month: row.month ?? row['Month'] ?? '',
     week: row.week ?? row['Week'] ?? '',
-    conducted: row.conducted ?? row['Whether Conducted'] ?? '',
-    alternateDate: row.alternateDate ?? row['Alternate Date'] ?? '',
-    coActivity: row.coActivity ?? row['Co-Curricular Activity'] ?? '',
-    coHours: row.coHours ?? row['Co-Curricular Hours'] ?? '',
-    coConducted: row.coConducted ?? row['Co-Curricular Conducted'] ?? '',
-    coAlternateDate: row.coAlternateDate ?? row['Co-Curricular Alternate Date'] ?? ''
+    conducted: row.conducted ?? row['Curricular Activity: Whether Conducted'] ?? '',
+    alternateDate: row.alternateDate ?? row['Curricular Activity: If not, Alternate Date'] ?? '',
+    coActivity: row.coActivity ?? row['Co-Curricular Activity: Activity Conducted'] ?? '',
+    coHours: row.coHours ?? row['Co-Curricular Activity: Hours Allotted'] ?? '',
+    coConducted: row.coConducted ?? row['Co-Curricular Activity: Whether Conducted'] ?? '',
+    coAlternateDate: row.coAlternateDate ?? row['Co-Curricular Activity: If not, Alternate Date'] ?? ''
   };
 }
+
+// Pre-assigned pool of co-curricular activities. One is auto-picked per
+// distinct week (cycling through this list) so the plan needs minimal manual
+// typing — edit or replace any entry in the generated table as needed.
+const CO_CURRICULAR_ACTIVITIES = [
+  'Group Discussion',
+  'Quiz Competition',
+  'Seminar Presentation',
+  'Assignment Submission',
+  'Guest Lecture',
+  'Wall Magazine / Bulletin Board',
+  'Debate',
+  'Case Study Discussion',
+  'Study / Field Visit',
+  'Model / Chart Preparation'
+];
 
 /**
  * Spreads syllabus topics across the semester's weeks. A week runs Mon-Sat
@@ -289,6 +310,8 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
 
   const rows = [];
   let wi = 0, usedHoursThisWeek = 0;
+  const seenWeeks = new Set();
+  let coIndex = 0;
 
   topics.forEach(t => {
     const hrs = Number(t.hoursRequired) || 1;
@@ -296,10 +319,19 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
       wi++; usedHoursThisWeek = 0;
     }
     const w = weeks[Math.min(wi, weeks.length - 1)];
+
+    let coActivity = '', coHours = '';
+    if (!seenWeeks.has(w.weekNum)) {
+      seenWeeks.add(w.weekNum);
+      coActivity = CO_CURRICULAR_ACTIVITIES[coIndex % CO_CURRICULAR_ACTIVITIES.length];
+      coHours = 1;
+      coIndex++;
+    }
+
     rows.push({
       unit: t.unit, activity: t.topic, hours: t.hoursRequired,
       month: w.month, week: w.weekNum, conducted: '', alternateDate: '',
-      coActivity: '', coHours: '', coConducted: '', coAlternateDate: ''
+      coActivity, coHours, coConducted: '', coAlternateDate: ''
     });
     usedHoursThisWeek += hrs;
   });
@@ -307,14 +339,22 @@ function generatePlanRows(topics, semRow, calendarRows, timetableRows, subjectId
   return rows;
 }
 
+// Filled in whenever a plan is loaded/generated for a class+subject; every
+// row shows the same Class/Semester/Subject text, matching the official
+// register format where each row is self-contained.
+let rowContextText = { className: '', semesterName: '', subjectName: '' };
+
 function rowHtml(r) {
   const checked = (v) => (v === true || String(v).toLowerCase() === 'true' || String(v).toLowerCase() === 'yes') ? 'checked' : '';
   return `<tr>
+    <td>${escapeHtml(rowContextText.className)}</td>
+    <td>${escapeHtml(rowContextText.semesterName)}</td>
+    <td>${escapeHtml(rowContextText.subjectName)}</td>
     <td><input class="f-unit" value="${escapeHtml(r.unit)}"></td>
-    <td><input class="f-activity" value="${escapeHtml(r.activity)}"></td>
-    <td><input class="f-hours" type="number" step="0.5" value="${escapeHtml(r.hours)}"></td>
     <td><input class="f-month" value="${escapeHtml(r.month)}"></td>
     <td><input class="f-week" type="number" value="${escapeHtml(r.week)}"></td>
+    <td><input class="f-activity" value="${escapeHtml(r.activity)}"></td>
+    <td><input class="f-hours" type="number" step="0.5" value="${escapeHtml(r.hours)}"></td>
     <td style="text-align:center;"><input class="f-conducted" type="checkbox" ${checked(r.conducted)}></td>
     <td><input class="f-altdate" type="date" value="${escapeHtml(r.alternateDate)}"></td>
     <td><input class="f-coactivity" value="${escapeHtml(r.coActivity)}"></td>

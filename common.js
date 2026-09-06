@@ -60,6 +60,22 @@ const SITE_HEADER_HTML = `
  * and fills in the institution details from the Config sheet. Call this once
  * per page, sequentially with other init calls (it makes one 'config' request).
  */
+function getDirectImageUrl(url) {
+  if (!url) return '';
+
+  url = String(url).trim();
+
+  // Convert Google Drive sharing URLs into direct image URLs
+  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+
+  if (driveMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w1000`;
+  }
+
+  return url;
+}
+
+
 async function renderSiteHeader(containerId) {
 
   const el = document.getElementById(containerId);
@@ -72,62 +88,110 @@ async function renderSiteHeader(containerId) {
 
     const configRows = await apiGet('config');
 
+    console.log('CONFIG DATA:', configRows);
+
     const config = {};
 
     configRows.forEach(row => {
 
-      const key = String(row.Setting || '').trim();
+      const setting = String(row.Setting || '').trim();
       const value = String(row.Value || '').trim();
 
-      config[key] = value;
+      config[setting] = value;
 
     });
 
 
-    // Institution Name
+    /* Institution details */
+
+    const institutionName =
+      document.getElementById('siteInstitutionName');
+
+    const institutionAddress =
+      document.getElementById('siteInstitutionAddress');
+
+    const commissionerateName =
+      document.getElementById('siteCommissionerateName');
+
+
     if (config['Institution Name']) {
 
-      document.getElementById('siteInstitutionName').textContent =
+      institutionName.textContent =
         config['Institution Name'];
 
     }
 
 
-    // Institution Address
     if (config['Institution Address']) {
 
-      document.getElementById('siteInstitutionAddress').textContent =
+      institutionAddress.textContent =
         config['Institution Address'];
 
     }
 
 
-    // Commissionerate / Department Name
     if (config['Commissionerate / Department Name']) {
 
-      document.getElementById('siteCommissionerateName').textContent =
+      commissionerateName.textContent =
         config['Commissionerate / Department Name'];
 
     }
 
 
-    // Logo 1
-    if (config['Logo 1 URL']) {
+    /* Logos */
 
-      document.getElementById('siteLogo1').src =
-        getDirectImageUrl(config['Logo 1 URL']);
+    const logo1 =
+      document.getElementById('siteLogo1');
+
+    const logo2 =
+      document.getElementById('siteLogo2');
+
+
+    const logo1Url =
+      getDirectImageUrl(config['Logo 1 URL']);
+
+    const logo2Url =
+      getDirectImageUrl(config['Logo 2 URL']);
+
+
+    console.log('Logo 1 URL:', logo1Url);
+    console.log('Logo 2 URL:', logo2Url);
+
+
+    if (logo1Url) {
+
+      logo1.src = logo1Url;
+
+      logo1.onerror = function () {
+
+        console.error(
+          'Logo 1 failed to load:',
+          logo1Url
+        );
+
+        this.style.display = 'none';
+
+      };
 
     }
 
 
-    // Logo 2
-    if (config['Logo 2 URL']) {
+    if (logo2Url) {
 
-      document.getElementById('siteLogo2').src =
-        getDirectImageUrl(config['Logo 2 URL']);
+      logo2.src = logo2Url;
+
+      logo2.onerror = function () {
+
+        console.error(
+          'Logo 2 failed to load:',
+          logo2Url
+        );
+
+        this.style.display = 'none';
+
+      };
 
     }
-
 
   } catch (err) {
 
@@ -138,60 +202,7 @@ async function renderSiteHeader(containerId) {
 
   }
 
-}
-function getDirectImageUrl(url) {
-
-  if (!url) return '';
-
-  url = String(url).trim();
-
-
-  /*
-   * Convert Google Drive sharing URLs
-   *
-   * Example:
-   * https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-   *
-   * becomes:
-   * https://drive.google.com/uc?export=view&id=FILE_ID
-   */
-
-  const driveMatch = url.match(
-    /drive\.google\.com\/file\/d\/([^\/]+)/
-  );
-
-  if (driveMatch && driveMatch[1]) {
-
-    return 'https://drive.google.com/uc?export=view&id=' +
-      driveMatch[1];
-
-  }
-
-
-  /*
-   * Handles URLs like:
-   * https://drive.google.com/open?id=FILE_ID
-   */
-
-  const idMatch = url.match(/[?&]id=([^&]+)/);
-
-  if (
-    url.includes('drive.google.com') &&
-    idMatch &&
-    idMatch[1]
-  ) {
-
-    return 'https://drive.google.com/uc?export=view&id=' +
-      idMatch[1];
-
-  }
-
-
-  // Normal direct image URL
-  return url;
-
-}
-/**
+}/**
  * Parses a Sheets date value that may arrive as a real Date (serialized to
  * an ISO string by Apps Script), plain "YYYY-MM-DD" text, or "DD-MM-YYYY" /
  * "DD/MM/YYYY" text. Native `new Date(str)` is unreliable for the latter two

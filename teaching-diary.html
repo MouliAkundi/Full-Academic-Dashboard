@@ -64,10 +64,35 @@
   .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 0.92rem; }
   .save-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
   .save-row button { width: auto; padding: 10px 22px; }
+
+  .print-letterhead { display: none; }
+  .print-signatures { display: none; }
+
+  @page { size: landscape; margin: 30mm 10mm 26mm 10mm; }
   @media print {
-    header, .selectors, .toolbar, .save-row, .no-print { display: none !important; }
-    body { background: #fff; }
+    header, .selectors, .toolbar, .save-row, .no-print, #siteHeader { display: none !important; }
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .panel { border: none; padding: 0; }
+    main { padding: 0; max-width: none; }
+    #diaryPanel { padding-top: 85px; padding-bottom: 65px; }
+
+    /* position:fixed repeats these on every printed page in Chrome */
+    .print-letterhead {
+      display: block; position: fixed; top: 0; left: 0; right: 0;
+      text-align: center; background: #fff; padding-bottom: 6px; border-bottom: 2px solid #000;
+    }
+    .print-letterhead .ph-line1 { font-size: 11px; }
+    .print-letterhead .ph-line2 { font-size: 17px; font-weight: 700; margin: 2px 0; }
+    .print-letterhead .ph-line3 { font-size: 12px; }
+    .print-letterhead .ph-line4 { font-size: 11px; font-weight: 600; margin-top: 4px; text-decoration: underline; }
+
+    .print-signatures {
+      display: flex; justify-content: space-between; position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; padding-top: 6px; border-top: 1px solid #000;
+    }
+    .print-signatures .sig-block { width: 30%; text-align: center; font-size: 10px; }
+    .print-signatures .sig-line { border-top: 1px solid #000; margin-bottom: 3px; height: 26px; }
+
     table.diary { font-size: 9px; }
     table.diary th, table.diary td { border: 1px solid #000 !important; }
     .date-group { page-break-inside: avoid; }
@@ -76,6 +101,7 @@
 </head>
 <body>
 
+<div id="siteHeader"></div>
 <header>
   <h1>Teaching Diary</h1>
   <a class="back" href="index.html">&larr; Dashboard</a>
@@ -98,11 +124,22 @@
   </section>
 
   <section class="panel" id="diaryPanel" style="display:none;">
+    <div class="print-letterhead">
+      <div class="ph-line1" id="phLine1">Commissionerate of Higher Education AP</div>
+      <div class="ph-line2" id="phLine2">Government Degree College, Vizianagaram</div>
+      <div class="ph-line3" id="phLine3">Department of Mathematics</div>
+      <div class="ph-line4" id="phLine4">Teaching Diary for the Academic Year ______</div>
+    </div>
     <h2>Diary</h2>
     <div class="toolbar no-print">
       <button class="secondary" id="printBtn">Print / Save as PDF</button>
     </div>
     <div id="dateGroups"></div>
+    <div class="print-signatures">
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Lecturer</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Head of the Department</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Principal</div></div>
+    </div>
     <div class="save-row no-print">
       <button id="saveBtn">Save Diary</button>
     </div>
@@ -123,6 +160,12 @@ const METHODOLOGY_LIST = [
   'Discussion Method', 'Activity-Oriented Method', 'Discovery Method', 'Team Teaching Method'
 ];
 const AIDS_LIST = ['PPT', 'E-Resources', 'NPTEL Videos', 'Smart Board', 'Charts / Models', 'Graph Sheets / Geometry Tools'];
+const STUDENT_ACTIVITY_LIST = [
+  'Student Seminar', 'Flash Test', 'Group Discussion on Concepts', 'Peer Teaching Activity',
+  'Concept Mind Mapping on Board', 'Oral Question & Answer Session', 'Mathematical Puzzle Activity',
+  'Think-Pair-Share Activity', 'Board Problem Solving by Students', 'Quiz Round',
+  'Error-Spotting Exercise', 'Rapid-Fire Round'
+];
 const LEAVE_OPTIONS = ['Normal', 'Casual Leave', 'On Duty', 'Holiday', 'Vacation', 'Other'];
 
 let allClasses = [];
@@ -152,6 +195,17 @@ toDateInput.value = todayStr();
 
 async function init() {
   try {
+    await renderSiteHeader('siteHeader');
+
+    document.getElementById('phLine3').textContent = DEPARTMENT_NAME;
+    try {
+      const configRows = await apiGet('config');
+      const config = {};
+      configRows.forEach(row => { config[row.Setting] = row.Value; });
+      if (config['Commissionerate / Department Name']) document.getElementById('phLine1').textContent = config['Commissionerate / Department Name'];
+      if (config['Institution Name']) document.getElementById('phLine2').textContent = config['Institution Name'];
+    } catch (err) { /* letterhead falls back to its hardcoded defaults */ }
+
     allClasses = await apiGet('classes');
     allSemesters = await apiGet('semesters');
     const periodRows = await apiGet('periods');
@@ -230,7 +284,7 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
   if (todaysPeriods.length === 0) return [];
 
   const rows = [];
-  let methodIdx = 0, aidIdx = 0;
+  let methodIdx = 0, aidIdx = 0, activityIdx = 0;
 
   for (const p of todaysPeriods) {
     const period = periodsData.find(pp => String(pp['Period No.']) === String(p['Period No.']));
@@ -253,13 +307,15 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
     methodIdx += 2;
     const aids = 'Black Board, ' + AIDS_LIST[aidIdx % AIDS_LIST.length];
     aidIdx++;
+    const studentActivity = STUDENT_ACTIVITY_LIST[activityIdx % STUDENT_ACTIVITY_LIST.length];
+    activityIdx++;
 
     rows.push({
       classId, academicYear, semester, className: classRow['Class Name'],
       periodTime: timeLabel, medium: classRow['Medium'] || '', type: p['Type'] || p['Theory/Practical'] || '',
       subjectId: p['Subject ID'], topic, methodology,
       studentsAttended: '', // filled once the Attendance module exists
-      aids, studentActivity: '', remarks: ''
+      aids, studentActivity, remarks: ''
     });
   }
   return rows;
@@ -346,6 +402,7 @@ loadBtn.addEventListener('click', async () => {
       loadStatus.className = 'status';
       emptyMsg.style.display = 'none';
       diaryPanel.style.display = 'block';
+      updateAcademicYearHeader();
     } else {
       loadStatus.textContent = 'No classes are scheduled in this date range.' + clampNote;
       loadStatus.className = 'status err';
@@ -357,6 +414,16 @@ loadBtn.addEventListener('click', async () => {
     loadBtn.disabled = false;
   }
 });
+
+function updateAcademicYearHeader() {
+  const years = new Set();
+  document.querySelectorAll('table.diary tbody tr').forEach(tr => {
+    if (tr.dataset.academicYear) years.add(tr.dataset.academicYear);
+  });
+  const label = years.size ? [...years].join(', ') : '______';
+  const el = document.getElementById('phLine4');
+  if (el) el.textContent = `Teaching Diary for the Academic Year ${label}`;
+}
 
 function dateKeyClient(value) {
   const d = new Date(value);

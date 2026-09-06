@@ -310,16 +310,11 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
   // cursor advances — so multiple periods of the same subject on the same
   // day share one topic, matching a single day's actual lesson.
   const topicForSubject = {};
-  let studentsAttendedToday = '';
   if (!isLeaveDay) {
     const distinctSubjects = [...new Set(todaysPeriods.map(p => p['Subject ID']))];
     for (const subjectId of distinctSubjects) {
       topicForSubject[subjectId] = await getTopicForSubjectToday(classId, semester, academicYear, subjectId);
     }
-    try {
-      const attRows = await apiGet('attendanceRange', { academicYear, semester, classId, from: date, to: date });
-      if (attRows.length > 0) studentsAttendedToday = attRows[0]['Students Present'];
-    } catch (err) { /* Attendance not recorded for this date yet — leave blank */ }
   }
 
   for (const p of todaysPeriods) {
@@ -350,7 +345,7 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
       classId, academicYear, semester, className: classRow['Class Name'],
       periodTime: timeLabel, medium: classRow['Medium'] || '', type: p['Type'] || p['Theory/Practical'] || '',
       subjectId: p['Subject ID'], topic, methodology,
-      studentsAttended: studentsAttendedToday,
+      studentsAttended: '', // overwritten with the live Attendance count in regenerateDateGroup
       aids, studentActivity, remarks: ''
     });
   }
@@ -494,6 +489,20 @@ async function regenerateDateGroup(groupEl, classesToday, date, day, preferExist
     } else {
       rows = await buildClassRowsForDate(date, day, classRow, classRow['Academic Year'], classRow['Semester'], statusWord, isLeaveDay);
     }
+
+    // Always pull the current Attendance count, even for previously-saved
+    // rows — attendance is usually taken after the diary was first generated,
+    // and this field shouldn't stay frozen at whatever it was back then.
+    if (!isLeaveDay && rows.length > 0) {
+      try {
+        const attRows = await apiGet('attendanceRange', {
+          academicYear: classRow['Academic Year'], semester: classRow['Semester'], classId, from: date, to: date
+        });
+        const count = attRows.length > 0 ? attRows[0]['Students Present'] : '';
+        rows.forEach(r => { r.studentsAttended = count; });
+      } catch (err) { /* leave whatever was already there */ }
+    }
+
     allRows = allRows.concat(rows);
   }
 

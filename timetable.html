@@ -162,6 +162,7 @@
 </head>
 <body>
 
+<div id="siteHeader"></div>
 <header>
   <h1>My Timetable</h1>
   <a class="back" href="index.html">&larr; Dashboard</a>
@@ -207,7 +208,7 @@
 
 <script>
 // ---- CONFIGURE THIS: paste your deployed Apps Script Web App URL below ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
+const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -266,6 +267,7 @@ function setOptions(select, items, placeholder) {
 
 async function init() {
   try {
+    await renderSiteHeader('siteHeader');
     const [classes, semesters, periodRows] = await Promise.all([
       apiGet('classes'),
       apiGet('semesters'),

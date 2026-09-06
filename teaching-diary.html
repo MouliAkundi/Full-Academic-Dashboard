@@ -176,8 +176,8 @@ let allClasses = [];
 let allSemesters = [];
 let periodsData = [];
 let timetableCache = {};  // "classId|semester" -> rows
-let annualPlanCache = {}; // "classId|semester|subjectId" -> rows
-let syllabusCache = {};   // "classId|semester|subjectId" -> rows
+let pendingTopicsCache = {}; // "classId|semester|subjectId" -> ordered list of not-yet-conducted topic strings
+let topicCursor = {};        // same key -> index into that list, advances once per new date the subject is taught
 let existingByKey = {};   // "classId|academicYear|semester|date" -> rows
 
 const fromDateInput = document.getElementById('fromDate');
@@ -242,7 +242,7 @@ function enumerateDates(from, to) {
 function activeSemestersOn(date) {
   const d = new Date(date + 'T00:00:00');
   return allSemesters.filter(s => {
-    const start = new Date(s['Start Date']), end = new Date(s['End Date']);
+    const start = parseDateLoose(s['Start Date']), end = parseDateLoose(s['End Date']);
     if (isNaN(start) || isNaN(end)) return false;
     return start <= d && d <= end;
   });
@@ -256,20 +256,36 @@ async function getTimetableFor(classId, semester, academicYear) {
   return timetableCache[key];
 }
 
-async function getNextTopic(classId, semester, academicYear, subjectId) {
+async function getPendingTopics(classId, semester, academicYear, subjectId) {
   const key = classId + '|' + semester + '|' + subjectId;
-  if (!(key in annualPlanCache)) {
-    annualPlanCache[key] = await apiGet('annualPlan', { academicYear, semester, classId, subjectId });
-  }
-  const planRows = annualPlanCache[key];
-  const nextFromPlan = planRows.find(r => String(r['Curricular Activity: Whether Conducted']).toLowerCase() !== 'yes');
-  if (nextFromPlan) return nextFromPlan['Curricular Activity: Activity Conducted'];
+  if (pendingTopicsCache[key]) return pendingTopicsCache[key];
 
-  if (!(key in syllabusCache)) {
-    syllabusCache[key] = await apiGet('syllabusTopics', { classId, semester, subjectId });
+  const planRows = await apiGet('annualPlan', { academicYear, semester, classId, subjectId });
+  let list = planRows
+    .filter(r => String(r['Curricular Activity: Whether Conducted']).toLowerCase() !== 'yes')
+    .map(r => r['Curricular Activity: Activity Conducted']);
+
+  if (list.length === 0) {
+    // No Annual Plan yet (or everything in it is already marked conducted) —
+    // fall back to the raw Syllabus order.
+    const topics = await apiGet('syllabusTopics', { classId, semester, subjectId });
+    list = topics.map(t => t.topic);
   }
-  const topics = syllabusCache[key];
-  return topics.length ? topics[0].topic : '';
+
+  pendingTopicsCache[key] = list;
+  return list;
+}
+
+async function getTopicForSubjectToday(classId, semester, academicYear, subjectId) {
+  const key = classId + '|' + semester + '|' + subjectId;
+  const list = await getPendingTopics(classId, semester, academicYear, subjectId);
+  const idx = topicCursor[key] || 0;
+  return idx < list.length ? list[idx] : 'Revision';
+}
+
+function advanceTopicCursor(classId, semester, subjectId) {
+  const key = classId + '|' + semester + '|' + subjectId;
+  topicCursor[key] = (topicCursor[key] || 0) + 1;
 }
 
 function normalizeRow(row) {
@@ -290,6 +306,17 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
   const rows = [];
   let methodIdx = 0, aidIdx = 0, activityIdx = 0;
 
+  // Resolve one topic per distinct subject taught this day, before any
+  // cursor advances — so multiple periods of the same subject on the same
+  // day share one topic, matching a single day's actual lesson.
+  const topicForSubject = {};
+  if (!isLeaveDay) {
+    const distinctSubjects = [...new Set(todaysPeriods.map(p => p['Subject ID']))];
+    for (const subjectId of distinctSubjects) {
+      topicForSubject[subjectId] = await getTopicForSubjectToday(classId, semester, academicYear, subjectId);
+    }
+  }
+
   for (const p of todaysPeriods) {
     const period = periodsData.find(pp => String(pp['Period No.']) === String(p['Period No.']));
     const timeLabel = period && period['Start Time'] && period['End Time']
@@ -306,7 +333,7 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
       continue;
     }
 
-    const topic = await getNextTopic(classId, semester, academicYear, p['Subject ID']);
+    const topic = topicForSubject[p['Subject ID']];
     const methodology = [METHODOLOGY_LIST[methodIdx % METHODOLOGY_LIST.length], METHODOLOGY_LIST[(methodIdx + 1) % METHODOLOGY_LIST.length]].join(', ');
     methodIdx += 2;
     const aids = 'Black Board, ' + AIDS_LIST[aidIdx % AIDS_LIST.length];
@@ -322,6 +349,13 @@ async function buildClassRowsForDate(date, day, classRow, academicYear, semester
       aids, studentActivity, remarks: ''
     });
   }
+
+  // Now that this date's rows are built, advance each subject's cursor once
+  // so the next date this subject appears gets the next pending topic.
+  if (!isLeaveDay) {
+    Object.keys(topicForSubject).forEach(subjectId => advanceTopicCursor(classId, semester, subjectId));
+  }
+
   return rows;
 }
 
@@ -334,7 +368,7 @@ loadBtn.addEventListener('click', async () => {
   if (to > today) { to = today; toDateInput.value = today; clampNote = ' (To Date was in the future — clamped to today.)'; }
   if (from > to) { loadStatus.textContent = 'From Date must be on or before To Date.'; loadStatus.className = 'status err'; return; }
 
-  timetableCache = {}; annualPlanCache = {}; syllabusCache = {};
+  timetableCache = {}; pendingTopicsCache = {}; topicCursor = {};
   loadStatus.textContent = 'Loading…' + clampNote;
   loadStatus.className = 'status';
   loadBtn.disabled = true;

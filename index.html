@@ -83,7 +83,7 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--light); colo
       <p>Automatically maintain daily teaching records.</p>
     </a>
 
-    <a class="card disabled" href="javascript:void(0)" onclick="openModule('attendance')">
+    <a class="card" href="attendance.html">
       <div class="card-icon">👥</div>
       <h3>Attendance</h3>
       <p>Record and manage student attendance.</p>
@@ -102,24 +102,9 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--light); colo
 <script src="common.js"></script>
 <script>
 function openLink(type) {
-
-  const links = {
-
-    website: "https://sites.google.com/view/mathmouli/academics",
-
-    profile: "https://sites.google.com/view/mathmouli/about-me/my-profile",
-
-    learning: "https://sites.google.com/view/mathmouli/learning-material"
-
-  };
-
-  if (!links[type]) {
-    alert("This link has not been configured yet.");
-    return;
-  }
-
+  const links = { website: "", profile: "", learning: "" };
+  if (!links[type]) { alert("This link has not been configured yet."); return; }
   window.open(links[type], "_blank");
-
 }
 
 function openModule(module) {

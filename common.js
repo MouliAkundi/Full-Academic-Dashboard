@@ -1,6 +1,83 @@
 // ---- CONFIGURE THIS ONCE: paste your deployed Apps Script Web App URL ----
 const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
 
+// Edit this once to change the department name everywhere it appears
+// (Annual Plan letterhead, Teaching Diary letterhead, etc.)
+const DEPARTMENT_NAME = 'Department of Mathematics';
+
+const SITE_HEADER_CSS = `
+<style>
+  .institution-header { background:#fff; padding:12px 20px; border-bottom:1px solid #dbe3ee; }
+  .institution-content { max-width:1200px; margin:auto; display:grid; grid-template-columns:90px 1fr 90px; align-items:center; gap:15px; text-align:center; }
+  .institution-logo { width:70px; height:70px; object-fit:contain; margin:auto; }
+  .institution-details h2 { margin:0; font-size:20px; color:#1f4e79; }
+  .institution-details p { margin:4px 0; font-size:14px; }
+  .personal-header { background:linear-gradient(135deg,#1f4e79,#2f75b5); color:#fff; padding:25px 20px; }
+  .personal-content { max-width:900px; margin:auto; display:grid; grid-template-columns:110px 1fr 110px; align-items:center; text-align:center; }
+  .personal-photo, .personal-logo { width:90px; height:90px; object-fit:cover; background:#fff; border:3px solid #fff; }
+  .personal-photo { border-radius:50%; }
+  .personal-logo { border-radius:15px; }
+  .personal-name { margin:0; font-size:28px; }
+  .dashboard-title { margin:7px 0 0; font-size:18px; font-weight:normal; }
+  @media (max-width:600px) {
+    .institution-content { grid-template-columns:60px 1fr 60px; }
+    .institution-logo { width:50px; height:50px; }
+    .institution-details h2 { font-size:15px; }
+    .institution-details p { font-size:11px; }
+    .personal-content { grid-template-columns:75px 1fr 75px; }
+    .personal-photo, .personal-logo { width:65px; height:65px; }
+    .personal-name { font-size:20px; }
+    .dashboard-title { font-size:15px; }
+  }
+  @media print { .institution-header, .personal-header { display:none !important; } }
+</style>`;
+
+const SITE_HEADER_HTML = `
+  <div class="institution-header">
+    <div class="institution-content">
+      <img id="siteLogo1" class="institution-logo" src="" alt="Logo">
+      <div class="institution-details">
+        <h2 id="siteInstitutionName">Loading...</h2>
+        <p id="siteInstitutionAddress"></p>
+        <p id="siteCommissionerateName"></p>
+      </div>
+      <img id="siteLogo2" class="institution-logo" src="" alt="Logo">
+    </div>
+  </div>
+  <div class="personal-header">
+    <div class="personal-content">
+      <img class="personal-photo" src="profile.jpg" alt="My Photo">
+      <div>
+        <h1 class="personal-name">A.CHANDRA MOULI</h1>
+        <p class="dashboard-title">My Academic Dashboard</p>
+      </div>
+      <img class="personal-logo" src="personal-logo.png" alt="Personal Logo">
+    </div>
+  </div>`;
+
+/**
+ * Injects the standard institution+personal header into the given container
+ * and fills in the institution details from the Config sheet. Call this once
+ * per page, sequentially with other init calls (it makes one 'config' request).
+ */
+async function renderSiteHeader(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
+  try {
+    const configRows = await apiGet('config');
+    const config = {};
+    configRows.forEach(row => { config[row.Setting] = row.Value; });
+    if (config['Institution Name']) document.getElementById('siteInstitutionName').textContent = config['Institution Name'];
+    if (config['Institution Address']) document.getElementById('siteInstitutionAddress').textContent = config['Institution Address'];
+    if (config['Commissionerate / Department Name']) document.getElementById('siteCommissionerateName').textContent = config['Commissionerate / Department Name'];
+    if (config['Logo 1 URL']) document.getElementById('siteLogo1').src = config['Logo 1 URL'];
+    if (config['Logo 2 URL']) document.getElementById('siteLogo2').src = config['Logo 2 URL'];
+  } catch (err) {
+    console.error('Could not load Config for site header:', err);
+  }
+}
+
 async function apiGet(action, params = {}) {
   const qs = new URLSearchParams({ action, ...params }).toString();
   const res = await fetch(`${API_URL}?${qs}`);

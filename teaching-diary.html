@@ -95,7 +95,10 @@
 
     table.diary { font-size: 9px; }
     table.diary th, table.diary td { border: 1px solid #000 !important; }
-    .date-group { page-break-inside: avoid; }
+    table.diary tr { page-break-inside: avoid; }
+    table.diary thead { display: table-header-group; }
+    #dateGroups { display: none !important; }
+    #printFlatTable { display: block !important; }
   }
 </style>
 </head>
@@ -135,6 +138,7 @@
       <button class="secondary" id="printBtn">Print / Save as PDF</button>
     </div>
     <div id="dateGroups"></div>
+    <div id="printFlatTable" style="display:none;"></div>
     <div class="print-signatures">
       <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Lecturer</div></div>
       <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Head of the Department</div></div>
@@ -482,6 +486,55 @@ function rowHtml(r) {
 }
 
 printBtn.addEventListener('click', () => window.print());
+
+window.addEventListener('beforeprint', () => {
+  let sno = 1;
+  const rows = [];
+  document.querySelectorAll('.date-group').forEach(groupEl => {
+    const date = groupEl.dataset.date, day = groupEl.dataset.day;
+    groupEl.querySelectorAll('table.diary tbody tr').forEach(tr => {
+      rows.push({
+        sno: sno++, date, day,
+        className: tr.children[0].textContent.trim(),
+        periodTime: tr.querySelector('.f-periodtime').textContent.trim(),
+        type: tr.querySelector('.f-type').textContent.trim(),
+        topic: tr.querySelector('.f-topic').textContent.trim(),
+        methodology: tr.querySelector('.f-methodology').textContent.trim(),
+        studentsAttended: tr.querySelector('.f-students').textContent.trim(),
+        aids: tr.querySelector('.f-aids').textContent.trim(),
+        studentActivity: tr.querySelector('.f-activity').textContent.trim(),
+        remarks: tr.querySelector('.f-remarks').textContent.trim()
+      });
+    });
+  });
+
+  const container = document.getElementById('printFlatTable');
+  if (rows.length === 0) {
+    container.innerHTML = '<p style="text-align:center;">No entries to print.</p>';
+    return;
+  }
+
+  // Matches the official paper register's columns exactly — no Medium column there.
+  let html = `<table class="diary"><thead><tr>
+    <th>Sl.No</th><th>Date</th><th>Day</th><th>Class</th><th>Period</th>
+    <th>Theory/<br>Practical</th><th style="min-width:180px;">Topic Covered</th>
+    <th style="min-width:140px;">Methodology<br>Adopted</th><th>No. of<br>Students</th>
+    <th style="min-width:120px;">Teaching Aids<br>Used</th><th style="min-width:120px;">Student<br>Activity</th>
+    <th style="min-width:100px;">Remarks</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r => {
+    html += `<tr>
+      <td>${r.sno}</td><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.day)}</td>
+      <td>${escapeHtml(r.className)}</td><td>${escapeHtml(r.periodTime)}</td>
+      <td>${escapeHtml(r.type)}</td><td>${escapeHtml(r.topic)}</td>
+      <td>${escapeHtml(r.methodology)}</td><td>${escapeHtml(r.studentsAttended)}</td>
+      <td>${escapeHtml(r.aids)}</td><td>${escapeHtml(r.studentActivity)}</td>
+      <td>${escapeHtml(r.remarks)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+});
 
 saveBtn.addEventListener('click', async () => {
   const entries = [];

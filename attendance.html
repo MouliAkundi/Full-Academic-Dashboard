@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance — Academic Dashboard</title>
+<style>
+  :root {
+    --navy: #1f4468; --navy-dark: #16324c; --bg: #eef2f6; --card: #ffffff;
+    --border: #dbe3ee; --text: #24313f; --muted: #64748b; --accent: #2f6690;
+    --ok: #1e7d4f; --err: #b0392f; --warn: #a15c00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-dark)); color: #fff;
+    padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+  header a.back {
+    color: #dce8f5; text-decoration: none; font-size: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 999px;
+  }
+  header a.back:hover { background: rgba(255,255,255,0.12); }
+  main { max-width: 1300px; margin: 0 auto; padding: 24px 16px 60px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 14px; font-size: 1.05rem; color: var(--navy); }
+  .selectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; align-items: end; }
+  .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  select, input, textarea, button { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; background: #fff; color: var(--text); font-family: inherit; }
+  button { background: var(--accent); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+  button:hover { background: var(--navy); }
+  button:disabled { background: #a9b7c4; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  button.secondary:hover { background: #f0f6fb; }
+  .status { margin-top: 12px; font-size: 0.88rem; min-height: 1.2em; }
+  .status.ok { color: var(--ok); } .status.err { color: var(--err); } .status.warn { color: var(--warn); }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar button { width: auto; padding: 9px 16px; }
+  .counts { display: flex; gap: 18px; flex-wrap: wrap; margin: 12px 0; font-size: 0.92rem; }
+  .counts b { font-size: 1.1rem; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 18px; }
+  table.data th, table.data td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+  table.data th { background: #f4f7fa; color: var(--navy); }
+  table.data td.num { text-align: right; }
+  .roster-scroll { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 14px; }
+  h3.section-title { color: var(--navy); font-size: 0.95rem; margin: 20px 0 8px; }
+  .print-letterhead, .print-signatures { display: none; }
+  @page { size: portrait; margin: 15mm; }
+  @media print {
+    header, .selectors, .toolbar, .no-print, #siteHeader { display: none !important; }
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .panel { border: none; padding: 0; }
+    .print-letterhead {
+      display: block; text-align: center; margin-bottom: 14px; border-bottom: 2px solid #000; padding-bottom: 8px;
+    }
+    .print-letterhead .ph-line1 { font-size: 11px; }
+    .print-letterhead .ph-line2 { font-size: 16px; font-weight: 700; margin: 2px 0; }
+    .print-letterhead .ph-line3 { font-size: 12px; }
+    .print-letterhead .ph-title { font-size: 12px; font-weight: 700; margin-top: 6px; text-decoration: underline; }
+    table.data { font-size: 10px; }
+    table.data th, table.data td { border: 1px solid #000 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="siteHeader"></div>
+<header>
+  <h1>Attendance</h1>
+  <a class="back" href="index.html">&larr; Dashboard</a>
+</header>
+
+<main>
+
+  <section class="panel no-print">
+    <h2>Take / Edit Attendance</h2>
+    <div class="selectors">
+      <div class="field"><label>Academic Year</label><select id="academicYear" disabled><option>Loading…</option></select></div>
+      <div class="field"><label>Semester</label><select id="semester" disabled><option>Select year first</option></select></div>
+      <div class="field"><label>Class</label><select id="classId" disabled><option>Select semester first</option></select></div>
+      <div class="field"><label>Date</label><input type="date" id="attDate"></div>
+      <div class="field"><button id="loadRosterBtn" disabled>Load Roster</button></div>
+    </div>
+    <div id="rosterStatus" class="status"></div>
+  </section>
+
+  <section class="panel no-print" id="rosterPanel" style="display:none;">
+    <h2 id="rosterTitle">Roster</h2>
+    <div id="dayWarning" class="status warn"></div>
+    <div class="roster-scroll">
+      <table class="data" id="rosterTable"><thead><tr><th>Roll No.</th><th>Name</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="field">
+      <label>Present Roll Numbers (comma-separated)</label>
+      <textarea id="presentInput" rows="3" placeholder="e.g. 75, 76, 78, 79, 80"></textarea>
+    </div>
+    <div class="counts">
+      <span>Total: <b id="countTotal">0</b></span>
+      <span style="color:var(--ok);">Present: <b id="countPresent">0</b></span>
+      <span style="color:var(--err);">Absent: <b id="countAbsent">0</b></span>
+    </div>
+    <div id="absentList" style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;"></div>
+    <button id="saveAttendanceBtn" style="width:auto;padding:10px 22px;">Save Attendance</button>
+    <div id="saveStatus" class="status"></div>
+  </section>
+
+  <section class="panel no-print">
+    <h2>Reports</h2>
+    <div class="selectors">
+      <div class="field"><label>Academic Year</label><select id="rAcademicYear" disabled><option>Loading…</option></select></div>
+      <div class="field"><label>Semester</label><select id="rSemester" disabled><option>Select year first</option></select></div>
+      <div class="field"><label>Class</label><select id="rClassId" disabled><option>Select semester first</option></select></div>
+      <div class="field"><label>From Date</label><input type="date" id="rFromDate"></div>
+      <div class="field"><label>To Date</label><input type="date" id="rToDate"></div>
+      <div class="field"><button id="loadReportBtn" disabled>Load Report</button></div>
+    </div>
+    <div id="reportStatus" class="status"></div>
+  </section>
+
+  <section class="panel" id="reportPanel" style="display:none;">
+    <div class="print-letterhead" id="classLetterhead">
+      <div class="ph-line1" id="rPhLine1">Commissionerate of Higher Education AP</div>
+      <div class="ph-line2" id="rPhLine2">Government Degree College, Vizianagaram</div>
+      <div class="ph-line3" id="rPhLine3">Department of Mathematics</div>
+      <div class="ph-title" id="reportTitle">Attendance Report</div>
+    </div>
+    <div class="toolbar no-print">
+      <button class="secondary" id="printClassBtn">Print Class Report / Save as PDF</button>
+    </div>
+
+    <div id="summaryCounts" class="counts"></div>
+
+    <h3 class="section-title">Daily</h3>
+    <div id="dailyTableWrap"></div>
+
+    <h3 class="section-title">Monthly</h3>
+    <div id="monthlyTableWrap"></div>
+
+    <h3 class="section-title">Per-Student Cumulative</h3>
+    <div class="no-print" style="max-width:320px;margin-bottom:10px;">
+      <label style="font-size:0.8rem;color:var(--muted);">Print an individual student's report</label>
+      <select id="studentPickForPrint"><option value="">Select a student…</option></select>
+      <button class="secondary" id="printStudentBtn" style="margin-top:8px;">Print Student Report / Save as PDF</button>
+    </div>
+    <div id="studentTableWrap"></div>
+
+    <div class="print-letterhead" id="studentLetterhead" style="display:none;">
+      <div class="ph-line1"></div><div class="ph-line2"></div><div class="ph-line3"></div><div class="ph-title"></div>
+    </div>
+    <div id="studentPrintWrap" style="display:none;"></div>
+  </section>
+
+  <div id="emptyMsg" class="empty" style="color:var(--muted);text-align:center;padding:20px;">Load a class's report above to see daily, monthly and cumulative attendance.</div>
+
+</main>
+
+<script src="common.js"></script>
+<script>
+let allClasses = [];
+let allSemesters = [];
+let calendarRows = [];
+let currentRoster = []; // [{rollNo, name}]
+let existingAttendanceForDate = null;
+let lastReport = null; // { rows, details, studentSummaries, workingDays }
+
+const yearSelect = document.getElementById('academicYear');
+const semSelect = document.getElementById('semester');
+const classSelect = document.getElementById('classId');
+const dateInput = document.getElementById('attDate');
+const loadRosterBtn = document.getElementById('loadRosterBtn');
+const rosterStatus = document.getElementById('rosterStatus');
+const rosterPanel = document.getElementById('rosterPanel');
+const rosterTitle = document.getElementById('rosterTitle');
+const dayWarning = document.getElementById('dayWarning');
+const rosterTable = document.getElementById('rosterTable').querySelector('tbody');
+const presentInput = document.getElementById('presentInput');
+const countTotal = document.getElementById('countTotal');
+const countPresent = document.getElementById('countPresent');
+const countAbsent = document.getElementById('countAbsent');
+const absentList = document.getElementById('absentList');
+const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+const saveStatus = document.getElementById('saveStatus');
+
+const rYearSelect = document.getElementById('rAcademicYear');
+const rSemSelect = document.getElementById('rSemester');
+const rClassSelect = document.getElementById('rClassId');
+const rFromDate = document.getElementById('rFromDate');
+const rToDate = document.getElementById('rToDate');
+const loadReportBtn = document.getElementById('loadReportBtn');
+const reportStatus = document.getElementById('reportStatus');
+const reportPanel = document.getElementById('reportPanel');
+const emptyMsg = document.getElementById('emptyMsg');
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+dateInput.value = todayStr();
+rToDate.value = todayStr();
+
+async function init() {
+  try {
+    await renderSiteHeader('siteHeader');
+    allClasses = await apiGet('classes');
+    allSemesters = await apiGet('semesters');
+
+    const configRows = await apiGet('config');
+    const config = {};
+    configRows.forEach(row => { config[row.Setting] = row.Value; });
+    if (config['Commissionerate / Department Name']) {
+      document.getElementById('rPhLine1').textContent = config['Commissionerate / Department Name'];
+    }
+    if (config['Institution Name']) {
+      document.getElementById('rPhLine2').textContent = config['Institution Name'];
+    }
+    document.getElementById('rPhLine3').textContent = DEPARTMENT_NAME;
+
+    wireClassCascade({
+      yearSelect, semSelect, classSelect, classes: allClasses,
+      onReset: () => { loadRosterBtn.disabled = true; },
+      onClassReady: () => { loadRosterBtn.disabled = !dateInput.value; }
+    });
+    wireClassCascade({
+      yearSelect: rYearSelect, semSelect: rSemSelect, classSelect: rClassSelect, classes: allClasses,
+      onReset: () => { loadReportBtn.disabled = true; },
+      onClassReady: () => { loadReportBtn.disabled = !(rFromDate.value && rToDate.value); }
+    });
+  } catch (err) {
+    rosterStatus.textContent = 'Could not load setup data: ' + err.message;
+    rosterStatus.className = 'status err';
+  }
+}
+
+dateInput.addEventListener('change', () => { loadRosterBtn.disabled = !classSelect.value; });
+rFromDate.addEventListener('change', () => { loadReportBtn.disabled = !(rClassSelect.value && rFromDate.value && rToDate.value); });
+rToDate.addEventListener('change', () => { loadReportBtn.disabled = !(rClassSelect.value && rFromDate.value && rToDate.value); });
+
+function classRowsFor(classId, allRows) {
+  return allRows.filter(c => String(c['Class ID']) === String(classId) && c['Student Roll No.'] !== '' && c['Student Roll No.'] != null);
+}
+
+function parseRollList(text) {
+  return text.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+/* ---------------- Take Attendance ---------------- */
+
+loadRosterBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
+  if (!academicYear || !semester || !classId || !date) return;
+
+  rosterStatus.textContent = 'Loading…';
+  rosterStatus.className = 'status';
+  loadRosterBtn.disabled = true;
+
+  try {
+    if (calendarRows.length === 0 || calendarRows._year !== academicYear + semester) {
+      calendarRows = await apiGet('calendar', { academicYear, semester });
+      calendarRows._year = academicYear + semester;
+    }
+    const students = classRowsFor(classId, allClasses)
+      .map(c => ({ rollNo: String(c['Student Roll No.']), name: c['Student Name'] }))
+      .sort((a, b) => Number(a.rollNo) - Number(b.rollNo));
+    currentRoster = students;
+
+    const existing = await apiGet('attendanceRange', { academicYear, semester, classId, from: date, to: date });
+    existingAttendanceForDate = existing.length > 0 ? existing[0] : null;
+
+    const classRow = allClasses.find(c => String(c['Class ID']) === String(classId));
+    rosterTitle.textContent = `${classId} — ${date} (${new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })})`;
+
+    dayWarning.textContent = isWorkingDay(date, calendarRows)
+      ? ''
+      : 'Heads up: this date is a Sunday or an Academic Calendar holiday. Save only if a class actually happened.';
+
+    rosterTable.innerHTML = students.map(s => `<tr><td>${escapeHtml(s.rollNo)}</td><td>${escapeHtml(s.name)}</td></tr>`).join('');
+
+    if (existingAttendanceForDate) {
+      presentInput.value = String(existingAttendanceForDate['Present Roll Numbers'] || '');
+    } else {
+      presentInput.value = '';
+    }
+    updateCounts();
+
+    rosterStatus.textContent = '';
+    rosterPanel.style.display = 'block';
+  } catch (err) {
+    rosterStatus.textContent = 'Error: ' + err.message;
+    rosterStatus.className = 'status err';
+  } finally {
+    loadRosterBtn.disabled = false;
+  }
+});
+
+function updateCounts() {
+  const presentSet = new Set(parseRollList(presentInput.value));
+  const total = currentRoster.length;
+  const present = currentRoster.filter(s => presentSet.has(s.rollNo)).length;
+  const absentStudents = currentRoster.filter(s => !presentSet.has(s.rollNo));
+  countTotal.textContent = total;
+  countPresent.textContent = present;
+  countAbsent.textContent = absentStudents.length;
+  absentList.textContent = absentStudents.length ? 'Absent: ' + absentStudents.map(s => s.rollNo).join(', ') : '';
+}
+presentInput.addEventListener('input', updateCounts);
+
+saveAttendanceBtn.addEventListener('click', async () => {
+  const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
+  const day = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+  const presentSet = new Set(parseRollList(presentInput.value));
+  const unknown = [...presentSet].filter(r => !currentRoster.some(s => s.rollNo === r));
+
+  if (unknown.length > 0) {
+    saveStatus.textContent = `Warning: roll number(s) not on this class's roster will be ignored: ${unknown.join(', ')}`;
+    saveStatus.className = 'status warn';
+  }
+
+  const details = currentRoster.map(s => ({
+    rollNo: s.rollNo, studentName: s.name, status: presentSet.has(s.rollNo) ? 'Present' : 'Absent'
+  }));
+  const studentsPresent = details.filter(d => d.status === 'Present').length;
+
+  // "Attendance is taken once a day" — use the class's first scheduled period that
+  // weekday as the representative Period/Subject for this one daily record.
+  let periodNo = '', subjectId = '';
+  try {
+    const timetableRows = await apiGet('timetable', { academicYear, semester, classId });
+    const todays = timetableRows.filter(r => r['Day'] === day).sort((a, b) => Number(a['Period No.']) - Number(b['Period No.']));
+    if (todays.length > 0) { periodNo = todays[0]['Period No.']; subjectId = todays[0]['Subject ID']; }
+  } catch (err) { /* non-fatal — Period/Subject just stay blank */ }
+
+  const payload = {
+    action: 'saveAttendance',
+    academicYear, semester, classId, date, periodNo, subjectId,
+    presentRollNumbers: [...presentSet].join(', '),
+    totalStudents: currentRoster.length,
+    studentsPresent,
+    studentsAbsent: currentRoster.length - studentsPresent,
+    attendanceEdited: existingAttendanceForDate ? 'Yes' : '',
+    details
+  };
+
+  saveAttendanceBtn.disabled = true;
+  saveStatus.textContent = 'Saving…';
+  saveStatus.className = 'status';
+
+  try {
+    await apiPost(payload);
+    saveStatus.textContent = 'Attendance saved.';
+    saveStatus.className = 'status ok';
+    existingAttendanceForDate = payload;
+  } catch (err) {
+    saveStatus.textContent = 'Error saving: ' + err.message;
+    saveStatus.className = 'status err';
+  } finally {
+    saveAttendanceBtn.disabled = false;
+  }
+});
+
+/* ---------------- Reports ---------------- */
+
+function monthKey(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+}
+
+function pct(num, den) {
+  return den > 0 ? ((num / den) * 100).toFixed(1) : '0.0';
+}
+
+loadReportBtn.addEventListener('click', async () => {
+  const academicYear = rYearSelect.value, semester = rSemSelect.value, classId = rClassSelect.value;
+  const from = rFromDate.value, to = rToDate.value;
+  if (!academicYear || !semester || !classId || !from || !to) return;
+  if (from > to) { reportStatus.textContent = 'From Date must be on or before To Date.'; reportStatus.className = 'status err'; return; }
+
+  reportStatus.textContent = 'Loading…';
+  reportStatus.className = 'status';
+  loadReportBtn.disabled = true;
+
+  try {
+    const rCalendar = await apiGet('calendar', { academicYear, semester });
+    const attRows = await apiGet('attendanceRange', { academicYear, semester, classId, from, to });
+    const detailRows = await apiGet('attendanceDetailsRange', { academicYear, semester, classId, from, to });
+
+    // Working days actually recorded (attendance was taken) vs. the theoretical
+    // total, so gaps in recording are visible rather than silently ignored.
+    const recordedDates = attRows.map(r => r['Date']);
+    const theoreticalWorkingDays = [];
+    let cursor = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    while (cursor <= end) {
+      const ds = cursor.getFullYear() + '-' + String(cursor.getMonth() + 1).padStart(2, '0') + '-' + String(cursor.getDate()).padStart(2, '0');
+      if (isWorkingDay(ds, rCalendar)) theoreticalWorkingDays.push(ds);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const totalPresentSum = attRows.reduce((s, r) => s + (Number(r['Students Present']) || 0), 0);
+    const totalPossibleSum = attRows.reduce((s, r) => s + (Number(r['Total Students']) || 0), 0);
+
+    document.getElementById('summaryCounts').innerHTML = `
+      <span>Working days in range: <b>${theoreticalWorkingDays.length}</b></span>
+      <span>Attendance recorded on: <b>${recordedDates.length}</b> day(s)</span>
+      <span>Overall class attendance: <b>${pct(totalPresentSum, totalPossibleSum)}%</b></span>
+    `;
+
+    // Daily table
+    const dailySorted = [...attRows].sort((a, b) => a['Date'] < b['Date'] ? -1 : 1);
+    document.getElementById('dailyTableWrap').innerHTML = dailySorted.length
+      ? `<table class="data"><thead><tr><th>Date</th><th>Present</th><th>Absent</th><th>Total</th><th>%</th></tr></thead><tbody>
+          ${dailySorted.map(r => `<tr><td>${escapeHtml(dateKeyClient(r['Date']))}</td><td class="num">${escapeHtml(r['Students Present'])}</td><td class="num">${escapeHtml(r['Students Absent'])}</td><td class="num">${escapeHtml(r['Total Students'])}</td><td class="num">${pct(r['Students Present'], r['Total Students'])}%</td></tr>`).join('')}
+        </tbody></table>`
+      : '<p style="color:var(--muted);">No attendance recorded in this range yet.</p>';
+
+    // Monthly table
+    const byMonth = {};
+    attRows.forEach(r => {
+      const mk = monthKey(dateKeyClient(r['Date']));
+      if (!byMonth[mk]) byMonth[mk] = { present: 0, total: 0, days: 0 };
+      byMonth[mk].present += Number(r['Students Present']) || 0;
+      byMonth[mk].total += Number(r['Total Students']) || 0;
+      byMonth[mk].days += 1;
+    });
+    const monthKeys = Object.keys(byMonth).sort((a, b) => new Date('1 ' + a) - new Date('1 ' + b));
+    document.getElementById('monthlyTableWrap').innerHTML = monthKeys.length
+      ? `<table class="data"><thead><tr><th>Month</th><th>Days Recorded</th><th>%</th></tr></thead><tbody>
+          ${monthKeys.map(mk => `<tr><td>${escapeHtml(mk)}</td><td class="num">${byMonth[mk].days}</td><td class="num">${pct(byMonth[mk].present, byMonth[mk].total)}%</td></tr>`).join('')}
+        </tbody></table>`
+      : '<p style="color:var(--muted);">No attendance recorded in this range yet.</p>';
+
+    // Per-student cumulative
+    const byStudent = {};
+    detailRows.forEach(r => {
+      const roll = String(r['Student Roll No.']);
+      if (!byStudent[roll]) byStudent[roll] = { name: r['Student Name'], present: 0, total: 0 };
+      byStudent[roll].total += 1;
+      if (String(r['Status']).toLowerCase() === 'present') byStudent[roll].present += 1;
+    });
+    const studentRolls = Object.keys(byStudent).sort((a, b) => Number(a) - Number(b));
+    document.getElementById('studentTableWrap').innerHTML = studentRolls.length
+      ? `<table class="data"><thead><tr><th>Roll No.</th><th>Name</th><th>Days Present</th><th>Days Recorded</th><th>%</th></tr></thead><tbody>
+          ${studentRolls.map(roll => `<tr><td>${escapeHtml(roll)}</td><td>${escapeHtml(byStudent[roll].name)}</td><td class="num">${byStudent[roll].present}</td><td class="num">${byStudent[roll].total}</td><td class="num">${pct(byStudent[roll].present, byStudent[roll].total)}%</td></tr>`).join('')}
+        </tbody></table>`
+      : '<p style="color:var(--muted);">No attendance recorded in this range yet.</p>';
+
+    const studentPick = document.getElementById('studentPickForPrint');
+    studentPick.innerHTML = '<option value="">Select a student…</option>' +
+      studentRolls.map(roll => `<option value="${roll}">${roll} — ${escapeHtml(byStudent[roll].name)}</option>`).join('');
+
+    const classRow = allClasses.find(c => String(c['Class ID']) === String(classId));
+    document.getElementById('reportTitle').textContent =
+      `Attendance Report — ${classId} (${academicYear}, Semester ${semester}) — ${from} to ${to}`;
+
+    lastReport = { detailRows, byStudent, classId, academicYear, semester, from, to };
+
+    reportStatus.textContent = '';
+    emptyMsg.style.display = 'none';
+    reportPanel.style.display = 'block';
+  } catch (err) {
+    reportStatus.textContent = 'Error: ' + err.message;
+    reportStatus.className = 'status err';
+  } finally {
+    loadReportBtn.disabled = false;
+  }
+});
+
+function dateKeyClient(value) {
+  const d = new Date(value);
+  if (isNaN(d)) return String(value);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* ---------------- Printing ---------------- */
+
+document.getElementById('printClassBtn').addEventListener('click', () => {
+  document.getElementById('classLetterhead').style.display = 'block';
+  document.getElementById('studentLetterhead').style.display = 'none';
+  document.getElementById('studentPrintWrap').style.display = 'none';
+  document.querySelectorAll('#reportPanel > *:not(.print-letterhead)').forEach(el => { if (el.id !== 'studentPrintWrap') el.style.removeProperty('display'); });
+  window.print();
+});
+
+document.getElementById('printStudentBtn').addEventListener('click', () => {
+  const roll = document.getElementById('studentPickForPrint').value;
+  if (!roll || !lastReport) { alert('Pick a student first.'); return; }
+
+  const name = lastReport.byStudent[roll].name;
+  const rows = lastReport.detailRows
+    .filter(r => String(r['Student Roll No.']) === roll)
+    .sort((a, b) => a['Date'] < b['Date'] ? -1 : 1);
+  const present = rows.filter(r => String(r['Status']).toLowerCase() === 'present').length;
+
+  const lh = document.getElementById('studentLetterhead');
+  lh.querySelector('.ph-line1').textContent = document.getElementById('rPhLine1').textContent;
+  lh.querySelector('.ph-line2').textContent = document.getElementById('rPhLine2').textContent;
+  lh.querySelector('.ph-line3').textContent = document.getElementById('rPhLine3').textContent;
+  lh.querySelector('.ph-title').textContent = `Student Attendance Report — ${name} (Roll No. ${roll}), ${lastReport.classId}, ${lastReport.from} to ${lastReport.to}`;
+
+  document.getElementById('studentPrintWrap').innerHTML = `
+    <p><b>Overall:</b> ${present} / ${rows.length} days present (${pct(present, rows.length)}%)</p>
+    <table class="data"><thead><tr><th>Date</th><th>Status</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(dateKeyClient(r['Date']))}</td><td>${escapeHtml(r['Status'])}</td></tr>`).join('')}
+    </tbody></table>`;
+
+  // Hide the class-report content and show only this student's printable block.
+  document.getElementById('classLetterhead').style.display = 'none';
+  lh.style.display = 'block';
+  document.querySelectorAll('#reportPanel > *').forEach(el => {
+    if (el.id !== 'studentLetterhead' && el.id !== 'studentPrintWrap' && !el.classList.contains('no-print')) {
+      el.dataset.wasHiddenForPrint = '1';
+      el.style.display = 'none';
+    }
+  });
+  document.getElementById('studentPrintWrap').style.display = 'block';
+  window.print();
+});
+
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('[data-was-hidden-for-print]').forEach(el => {
+    el.style.removeProperty('display');
+    delete el.dataset.wasHiddenForPrint;
+  });
+  document.getElementById('studentPrintWrap').style.display = 'none';
+  document.getElementById('studentLetterhead').style.display = 'none';
+  document.getElementById('classLetterhead').style.display = 'block';
+});
+
+init();
+</script>
+
+</body>
+</html>

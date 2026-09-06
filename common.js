@@ -61,23 +61,136 @@ const SITE_HEADER_HTML = `
  * per page, sequentially with other init calls (it makes one 'config' request).
  */
 async function renderSiteHeader(containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
-  try {
-    const configRows = await apiGet('config');
-    const config = {};
-    configRows.forEach(row => { config[row.Setting] = row.Value; });
-    if (config['Institution Name']) document.getElementById('siteInstitutionName').textContent = config['Institution Name'];
-    if (config['Institution Address']) document.getElementById('siteInstitutionAddress').textContent = config['Institution Address'];
-    if (config['Commissionerate / Department Name']) document.getElementById('siteCommissionerateName').textContent = config['Commissionerate / Department Name'];
-    if (config['Logo 1 URL']) document.getElementById('siteLogo1').src = config['Logo 1 URL'];
-    if (config['Logo 2 URL']) document.getElementById('siteLogo2').src = config['Logo 2 URL'];
-  } catch (err) {
-    console.error('Could not load Config for site header:', err);
-  }
-}
 
+  const el = document.getElementById(containerId);
+
+  if (!el) return;
+
+  el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
+
+  try {
+
+    const configRows = await apiGet('config');
+
+    const config = {};
+
+    configRows.forEach(row => {
+
+      const key = String(row.Setting || '').trim();
+      const value = String(row.Value || '').trim();
+
+      config[key] = value;
+
+    });
+
+
+    // Institution Name
+    if (config['Institution Name']) {
+
+      document.getElementById('siteInstitutionName').textContent =
+        config['Institution Name'];
+
+    }
+
+
+    // Institution Address
+    if (config['Institution Address']) {
+
+      document.getElementById('siteInstitutionAddress').textContent =
+        config['Institution Address'];
+
+    }
+
+
+    // Commissionerate / Department Name
+    if (config['Commissionerate / Department Name']) {
+
+      document.getElementById('siteCommissionerateName').textContent =
+        config['Commissionerate / Department Name'];
+
+    }
+
+
+    // Logo 1
+    if (config['Logo 1 URL']) {
+
+      document.getElementById('siteLogo1').src =
+        getDirectImageUrl(config['Logo 1 URL']);
+
+    }
+
+
+    // Logo 2
+    if (config['Logo 2 URL']) {
+
+      document.getElementById('siteLogo2').src =
+        getDirectImageUrl(config['Logo 2 URL']);
+
+    }
+
+
+  } catch (err) {
+
+    console.error(
+      'Could not load Config for site header:',
+      err
+    );
+
+  }
+
+}
+function getDirectImageUrl(url) {
+
+  if (!url) return '';
+
+  url = String(url).trim();
+
+
+  /*
+   * Convert Google Drive sharing URLs
+   *
+   * Example:
+   * https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+   *
+   * becomes:
+   * https://drive.google.com/uc?export=view&id=FILE_ID
+   */
+
+  const driveMatch = url.match(
+    /drive\.google\.com\/file\/d\/([^\/]+)/
+  );
+
+  if (driveMatch && driveMatch[1]) {
+
+    return 'https://drive.google.com/uc?export=view&id=' +
+      driveMatch[1];
+
+  }
+
+
+  /*
+   * Handles URLs like:
+   * https://drive.google.com/open?id=FILE_ID
+   */
+
+  const idMatch = url.match(/[?&]id=([^&]+)/);
+
+  if (
+    url.includes('drive.google.com') &&
+    idMatch &&
+    idMatch[1]
+  ) {
+
+    return 'https://drive.google.com/uc?export=view&id=' +
+      idMatch[1];
+
+  }
+
+
+  // Normal direct image URL
+  return url;
+
+}
 /**
  * Parses a Sheets date value that may arrive as a real Date (serialized to
  * an ISO string by Apps Script), plain "YYYY-MM-DD" text, or "DD-MM-YYYY" /

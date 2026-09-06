@@ -206,10 +206,8 @@
 
 </main>
 
+<script src="common.js"></script>
 <script>
-// ---- CONFIGURE THIS: paste your deployed Apps Script Web App URL below ----
-const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
-
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 let allClasses = [];
@@ -230,25 +228,6 @@ const emptyMsg = document.getElementById('emptyMsg');
 const saveBtn = document.getElementById('saveBtn');
 const clearBtn = document.getElementById('clearBtn');
 const saveStatus = document.getElementById('saveStatus');
-
-async function apiGet(action, params = {}) {
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${API_URL}?${qs}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Request failed');
-  return json.data;
-}
-
-async function apiPost(body) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
-    body: JSON.stringify(body)
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || 'Request failed');
-  return json.data;
-}
 
 function setOptions(select, items, placeholder) {
   select.innerHTML = '';
@@ -375,12 +354,6 @@ function subjectOptionsHtml(selectedSubjectId) {
     html += `<option value="${s.subjectId}" data-name="${escapeHtml(s.subjectName)}" data-type="${escapeHtml(s.type || '')}" ${sel}>${escapeHtml(s.subjectName)} (${escapeHtml(s.type || '')})</option>`;
   });
   return html;
-}
-
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, m => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[m]));
 }
 
 function renderGrid(classId, academicYear, semester) {

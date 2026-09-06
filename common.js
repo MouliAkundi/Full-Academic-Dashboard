@@ -1,5 +1,5 @@
 // ---- CONFIGURE THIS ONCE: paste your deployed Apps Script Web App URL ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
+const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
 
 // Edit this once to change the department name everywhere it appears
 // (Annual Plan letterhead, Teaching Diary letterhead, etc.)
@@ -76,6 +76,29 @@ async function renderSiteHeader(containerId) {
   } catch (err) {
     console.error('Could not load Config for site header:', err);
   }
+}
+
+/**
+ * Parses a Sheets date value that may arrive as a real Date (serialized to
+ * an ISO string by Apps Script), plain "YYYY-MM-DD" text, or "DD-MM-YYYY" /
+ * "DD/MM/YYYY" text. Native `new Date(str)` is unreliable for the latter two
+ * — it can silently produce a wrong-but-valid date instead of failing, which
+ * is exactly what caused semester date-range checks to misbehave. Returns an
+ * Invalid Date (NaN) if nothing matches, same as native Date() would.
+ */
+function parseDateLoose(value) {
+  if (value instanceof Date) return value;
+  if (typeof value === 'number') return new Date(value);
+  const str = String(value || '').trim();
+  if (!str) return new Date(NaN);
+
+  let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); // 2026-06-22 or with a time suffix
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+
+  m = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); // 22-06-2026 or 22/06/2026
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+
+  return new Date(str); // last resort — real Date objects/ISO strings land here
 }
 
 async function apiGet(action, params = {}) {

@@ -48,8 +48,8 @@ const SITE_HEADER_HTML = `
     <div class="personal-content">
       <img class="personal-photo" src="profile.jpg" alt="My Photo">
       <div>
-        <h1 class="personal-name">A.CHANDRA MOULI</h1>
-        <p class="dashboard-title">My Academic Dashboard</p>
+        <h1 class="personal-name">A. CHANDRA MOULI</h1>
+        <p class="dashboard-title">Academic Dashboard</p>
       </div>
       <img class="personal-logo" src="personal-logo.png" alt="Personal Logo">
     </div>

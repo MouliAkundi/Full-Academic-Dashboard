@@ -360,7 +360,7 @@ function buildMonthWeeks(startDate, endDate, calendarRows) {
 
     const isFullBlockOff = calendarRows.some(h => {
       if (!/holiday|vacation|exam/i.test(h['Day Type'] || '')) return false;
-      const from = new Date(h['From Date']), to = new Date(h['To Date']);
+      const from = parseDateLoose(h['From Date']), to = parseDateLoose(h['To Date']);
       if (isNaN(from) || isNaN(to)) return false;
       return from <= cursor && to >= segmentEnd;
     });
@@ -387,8 +387,8 @@ function buildMonthWeeks(startDate, endDate, calendarRows) {
  */
 function generatePlanRows(topics, semRow, calendarRows, periodsPerWeek, subjectId) {
   if (!topics.length) return [];
-  const startDate = new Date(semRow['Start Date']);
-  const endDate = new Date(semRow['End Date']);
+  const startDate = parseDateLoose(semRow['Start Date']);
+  const endDate = parseDateLoose(semRow['End Date']);
   if (isNaN(startDate) || isNaN(endDate)) return [];
 
   const weeks = buildMonthWeeks(startDate, endDate, calendarRows);

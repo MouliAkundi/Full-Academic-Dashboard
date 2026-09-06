@@ -1,5 +1,5 @@
 // ---- CONFIGURE THIS ONCE: paste your deployed Apps Script Web App URL ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
+const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
 
 // Edit this once to change the department name everywhere it appears
 // (Annual Plan letterhead, Teaching Diary letterhead, etc.)
@@ -60,149 +60,25 @@ const SITE_HEADER_HTML = `
  * and fills in the institution details from the Config sheet. Call this once
  * per page, sequentially with other init calls (it makes one 'config' request).
  */
-function getDirectImageUrl(url) {
-  if (!url) return '';
-
-  url = String(url).trim();
-
-  // Convert Google Drive sharing URLs into direct image URLs
-  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-
-  if (driveMatch) {
-    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w1000`;
+async function renderSiteHeader(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
+  try {
+    const configRows = await apiGet('config');
+    const config = {};
+    configRows.forEach(row => { config[row.Setting] = row.Value; });
+    if (config['Institution Name']) document.getElementById('siteInstitutionName').textContent = config['Institution Name'];
+    if (config['Institution Address']) document.getElementById('siteInstitutionAddress').textContent = config['Institution Address'];
+    if (config['Commissionerate / Department Name']) document.getElementById('siteCommissionerateName').textContent = config['Commissionerate / Department Name'];
+    if (config['Logo 1 URL']) document.getElementById('siteLogo1').src = config['Logo 1 URL'];
+    if (config['Logo 2 URL']) document.getElementById('siteLogo2').src = config['Logo 2 URL'];
+  } catch (err) {
+    console.error('Could not load Config for site header:', err);
   }
-
-  return url;
 }
 
-
-async function renderSiteHeader(containerId) {
-
-  const el = document.getElementById(containerId);
-
-  if (!el) return;
-
-  el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
-
-  try {
-
-    const configRows = await apiGet('config');
-
-    console.log('CONFIG DATA:', configRows);
-
-    const config = {};
-
-    configRows.forEach(row => {
-
-      const setting = String(row.Setting || '').trim();
-      const value = String(row.Value || '').trim();
-
-      config[setting] = value;
-
-    });
-
-
-    /* Institution details */
-
-    const institutionName =
-      document.getElementById('siteInstitutionName');
-
-    const institutionAddress =
-      document.getElementById('siteInstitutionAddress');
-
-    const commissionerateName =
-      document.getElementById('siteCommissionerateName');
-
-
-    if (config['Institution Name']) {
-
-      institutionName.textContent =
-        config['Institution Name'];
-
-    }
-
-
-    if (config['Institution Address']) {
-
-      institutionAddress.textContent =
-        config['Institution Address'];
-
-    }
-
-
-    if (config['Commissionerate / Department Name']) {
-
-      commissionerateName.textContent =
-        config['Commissionerate / Department Name'];
-
-    }
-
-
-    /* Logos */
-
-    const logo1 =
-      document.getElementById('siteLogo1');
-
-    const logo2 =
-      document.getElementById('siteLogo2');
-
-
-    const logo1Url =
-      getDirectImageUrl(config['Logo 1 URL']);
-
-    const logo2Url =
-      getDirectImageUrl(config['Logo 2 URL']);
-
-
-    console.log('Logo 1 URL:', logo1Url);
-    console.log('Logo 2 URL:', logo2Url);
-
-
-    if (logo1Url) {
-
-      logo1.src = logo1Url;
-
-      logo1.onerror = function () {
-
-        console.error(
-          'Logo 1 failed to load:',
-          logo1Url
-        );
-
-        this.style.display = 'none';
-
-      };
-
-    }
-
-
-    if (logo2Url) {
-
-      logo2.src = logo2Url;
-
-      logo2.onerror = function () {
-
-        console.error(
-          'Logo 2 failed to load:',
-          logo2Url
-        );
-
-        this.style.display = 'none';
-
-      };
-
-    }
-
-  } catch (err) {
-
-    console.error(
-      'Could not load Config for site header:',
-      err
-    );
-
-  }
-
-}/**
+/**
  * Parses a Sheets date value that may arrive as a real Date (serialized to
  * an ISO string by Apps Script), plain "YYYY-MM-DD" text, or "DD-MM-YYYY" /
  * "DD/MM/YYYY" text. Native `new Date(str)` is unreliable for the latter two
@@ -223,6 +99,23 @@ function parseDateLoose(value) {
   if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 
   return new Date(str); // last resort — real Date objects/ISO strings land here
+}
+
+function isHolidayDate(dateStr, calendarRows) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return calendarRows.some(h => {
+    if (!/holiday|vacation|exam/i.test(h['Day Type'] || '')) return false;
+    const from = parseDateLoose(h['From Date']), to = parseDateLoose(h['To Date']);
+    if (isNaN(from) || isNaN(to)) return false;
+    return from <= d && d <= to;
+  });
+}
+
+// Sunday, or a date covered by an Academic Calendar Holiday/Vacation/Exam entry, is not a working day.
+function isWorkingDay(dateStr, calendarRows) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (d.getDay() === 0) return false;
+  return !isHolidayDate(dateStr, calendarRows);
 }
 
 async function apiGet(action, params = {}) {

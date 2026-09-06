@@ -17,25 +17,6 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Arial, sans-serif; background: var(--light); color: var(--text); }
 
-/* INSTITUTION HEADER */
-.institution-header { background: var(--white); padding: 12px 20px; border-bottom: 1px solid var(--border); }
-.institution-content {
-  max-width: 1200px; margin: auto; display: grid;
-  grid-template-columns: 90px 1fr 90px; align-items: center; gap: 15px; text-align: center;
-}
-.institution-logo { width: 70px; height: 70px; object-fit: contain; margin: auto; }
-.institution-details h2 { margin: 0; font-size: 20px; color: var(--primary); }
-.institution-details p { margin: 4px 0; font-size: 14px; }
-
-/* PERSONAL HEADER */
-.personal-header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 25px 20px; }
-.personal-content { max-width: 900px; margin: auto; display: grid; grid-template-columns: 110px 1fr 110px; align-items: center; text-align: center; }
-.personal-photo, .personal-logo { width: 90px; height: 90px; object-fit: cover; background: white; border: 3px solid white; }
-.personal-photo { border-radius: 50%; }
-.personal-logo { border-radius: 15px; }
-.personal-name { margin: 0; font-size: 28px; }
-.dashboard-title { margin: 7px 0 0; font-size: 18px; font-weight: normal; }
-
 /* QUICK LINKS */
 .quick-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 18px; background: white; }
 .quick-links button {
@@ -63,45 +44,13 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--light); colo
 /* STATUS */
 .status { text-align: center; padding: 10px; font-size: 13px; color: #666; }
 
-@media (max-width: 600px) {
-  .institution-content { grid-template-columns: 60px 1fr 60px; }
-  .institution-logo { width: 50px; height: 50px; }
-  .institution-details h2 { font-size: 15px; }
-  .institution-details p { font-size: 11px; }
-  .personal-content { grid-template-columns: 75px 1fr 75px; }
-  .personal-photo, .personal-logo { width: 65px; height: 65px; }
-  .personal-name { font-size: 20px; }
-  .dashboard-title { font-size: 15px; }
-}
+
 </style>
 </head>
 
 <body>
 
-<!-- INSTITUTION HEADER -->
-<div class="institution-header">
-  <div class="institution-content">
-    <img id="logo1" class="institution-logo" src="" alt="Logo">
-    <div class="institution-details">
-      <h2 id="institutionName">Loading...</h2>
-      <p id="institutionAddress"></p>
-      <p id="commissionerateName"></p>
-    </div>
-    <img id="logo2" class="institution-logo" src="" alt="Logo">
-  </div>
-</div>
-
-<!-- PERSONAL HEADER -->
-<div class="personal-header">
-  <div class="personal-content">
-    <img class="personal-photo" src="profile.jpg" alt="My Photo">
-    <div>
-      <h1 class="personal-name">A.CHANDRA MOULI</h1>
-      <p class="dashboard-title">My Academic Dashboard</p>
-    </div>
-    <img class="personal-logo" src="personal-logo.png" alt="Personal Logo">
-  </div>
-</div>
+<div id="siteHeader"></div>
 
 <!-- QUICK LINKS -->
 <div class="quick-links">
@@ -128,11 +77,11 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--light); colo
       <p>Generate and manage your annual curricular plan.</p>
     </a>
 
-    <a class="card" href="teaching-diary.html">
-  <div class="card-icon">📖</div>
-  <h3>Teaching Diary</h3>
-  <p>Automatically maintain daily teaching records.</p>
-</a>
+    <a class="card disabled" href="javascript:void(0)" onclick="openModule('teaching-diary')">
+      <div class="card-icon">📖</div>
+      <h3>Teaching Diary</h3>
+      <p>Automatically maintain daily teaching records.</p>
+    </a>
 
     <a class="card disabled" href="javascript:void(0)" onclick="openModule('attendance')">
       <div class="card-icon">👥</div>
@@ -150,34 +99,8 @@ body { margin: 0; font-family: Arial, sans-serif; background: var(--light); colo
 </div>
 
 <!-- STATUS -->
-<div class="status" id="status">Connecting to Academic Records Backend...</div>
-
+<script src="common.js"></script>
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec";
-
-async function loadConfig() {
-  try {
-    const response = await fetch(API_URL + "?action=config");
-    const result = await response.json();
-    if (!result.success) throw new Error(result.error);
-
-    const config = {};
-    result.data.forEach(row => { config[row.Setting] = row.Value; });
-
-    document.getElementById("institutionName").textContent = config["Institution Name"] || "";
-    document.getElementById("institutionAddress").textContent = config["Institution Address"] || "";
-    document.getElementById("commissionerateName").textContent = config["Commissionerate / Department Name"] || "";
-
-    if (config["Logo 1 URL"]) document.getElementById("logo1").src = config["Logo 1 URL"];
-    if (config["Logo 2 URL"]) document.getElementById("logo2").src = config["Logo 2 URL"];
-
-    document.getElementById("status").textContent = "Academic Records Backend connected successfully.";
-  } catch (error) {
-    console.error(error);
-    document.getElementById("status").textContent = "Unable to connect to Academic Records Backend.";
-  }
-}
-
 function openLink(type) {
   const links = { website: "", profile: "", learning: "" };
   if (!links[type]) { alert("This link has not been configured yet."); return; }
@@ -188,7 +111,7 @@ function openModule(module) {
   alert(module.replace("-", " ").toUpperCase() + " module is coming soon.");
 }
 
-loadConfig();
+renderSiteHeader('siteHeader');
 </script>
 
 </body>

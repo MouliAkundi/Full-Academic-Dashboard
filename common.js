@@ -1,5 +1,5 @@
 // ---- CONFIGURE THIS ONCE: paste your deployed Apps Script Web App URL ----
-const API_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxAe7OQOSnq7zdX3GqtWg02r3LHqTh05wYUkMoV3VumtdNONNsgk74SeO3AkjBmGec4/exec';
 
 // Edit this once to change the department name everywhere it appears
 // (Annual Plan letterhead, Teaching Diary letterhead, etc.)

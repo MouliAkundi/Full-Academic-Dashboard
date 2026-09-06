@@ -90,11 +90,11 @@
     <h2 id="rosterTitle">Roster</h2>
     <div id="dayWarning" class="status warn"></div>
     <div class="roster-scroll">
-      <table class="data" id="rosterTable"><thead><tr><th>Roll No.</th><th>Name</th></tr></thead><tbody></tbody></table>
+      <table class="data" id="rosterTable"><thead><tr><th class="col-narrow">Present?</th><th>Roll No.</th><th>Name</th></tr></thead><tbody></tbody></table>
     </div>
-    <div class="field">
-      <label>Present Roll Numbers (comma-separated)</label>
-      <textarea id="presentInput" rows="3" placeholder="e.g. 75, 76, 78, 79, 80"></textarea>
+    <div class="toolbar no-print">
+      <button class="secondary" id="checkAllBtn" style="width:auto;">Mark All Present</button>
+      <button class="secondary" id="uncheckAllBtn" style="width:auto;">Mark All Absent</button>
     </div>
     <div class="counts">
       <span>Total: <b id="countTotal">0</b></span>
@@ -175,7 +175,6 @@ const rosterPanel = document.getElementById('rosterPanel');
 const rosterTitle = document.getElementById('rosterTitle');
 const dayWarning = document.getElementById('dayWarning');
 const rosterTable = document.getElementById('rosterTable').querySelector('tbody');
-const presentInput = document.getElementById('presentInput');
 const countTotal = document.getElementById('countTotal');
 const countPresent = document.getElementById('countPresent');
 const countAbsent = document.getElementById('countAbsent');
@@ -241,10 +240,6 @@ function classRowsFor(classId, allRows) {
   return allRows.filter(c => String(c['Class ID']) === String(classId) && c['Student Roll No.'] !== '' && c['Student Roll No.'] != null);
 }
 
-function parseRollList(text) {
-  return text.split(',').map(s => s.trim()).filter(Boolean);
-}
-
 /* ---------------- Take Attendance ---------------- */
 
 loadRosterBtn.addEventListener('click', async () => {
@@ -275,13 +270,15 @@ loadRosterBtn.addEventListener('click', async () => {
       ? ''
       : 'Heads up: this date is a Sunday or an Academic Calendar holiday. Save only if a class actually happened.';
 
-    rosterTable.innerHTML = students.map(s => `<tr><td>${escapeHtml(s.rollNo)}</td><td>${escapeHtml(s.name)}</td></tr>`).join('');
+    const presentFromExisting = existingAttendanceForDate
+      ? new Set(String(existingAttendanceForDate['Present Roll Numbers'] || '').split(',').map(s => s.trim()).filter(Boolean))
+      : null;
 
-    if (existingAttendanceForDate) {
-      presentInput.value = String(existingAttendanceForDate['Present Roll Numbers'] || '');
-    } else {
-      presentInput.value = '';
-    }
+    rosterTable.innerHTML = students.map(s => {
+      const checked = presentFromExisting ? presentFromExisting.has(s.rollNo) : false;
+      return `<tr><td style="text-align:center;"><input type="checkbox" class="present-check" data-roll="${escapeHtml(s.rollNo)}" ${checked ? 'checked' : ''}></td><td>${escapeHtml(s.rollNo)}</td><td>${escapeHtml(s.name)}</td></tr>`;
+    }).join('');
+
     updateCounts();
 
     rosterStatus.textContent = '';
@@ -294,8 +291,12 @@ loadRosterBtn.addEventListener('click', async () => {
   }
 });
 
+function getCheckedRolls() {
+  return [...document.querySelectorAll('.present-check:checked')].map(cb => cb.dataset.roll);
+}
+
 function updateCounts() {
-  const presentSet = new Set(parseRollList(presentInput.value));
+  const presentSet = new Set(getCheckedRolls());
   const total = currentRoster.length;
   const present = currentRoster.filter(s => presentSet.has(s.rollNo)).length;
   const absentStudents = currentRoster.filter(s => !presentSet.has(s.rollNo));
@@ -304,18 +305,22 @@ function updateCounts() {
   countAbsent.textContent = absentStudents.length;
   absentList.textContent = absentStudents.length ? 'Absent: ' + absentStudents.map(s => s.rollNo).join(', ') : '';
 }
-presentInput.addEventListener('input', updateCounts);
+rosterTable.addEventListener('change', (e) => {
+  if (e.target.classList.contains('present-check')) updateCounts();
+});
+document.getElementById('checkAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.present-check').forEach(cb => { cb.checked = true; });
+  updateCounts();
+});
+document.getElementById('uncheckAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.present-check').forEach(cb => { cb.checked = false; });
+  updateCounts();
+});
 
 saveAttendanceBtn.addEventListener('click', async () => {
   const academicYear = yearSelect.value, semester = semSelect.value, classId = classSelect.value, date = dateInput.value;
   const day = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
-  const presentSet = new Set(parseRollList(presentInput.value));
-  const unknown = [...presentSet].filter(r => !currentRoster.some(s => s.rollNo === r));
-
-  if (unknown.length > 0) {
-    saveStatus.textContent = `Warning: roll number(s) not on this class's roster will be ignored: ${unknown.join(', ')}`;
-    saveStatus.className = 'status warn';
-  }
+  const presentSet = new Set(getCheckedRolls());
 
   const details = currentRoster.map(s => ({
     rollNo: s.rollNo, studentName: s.name, status: presentSet.has(s.rollNo) ? 'Present' : 'Absent'

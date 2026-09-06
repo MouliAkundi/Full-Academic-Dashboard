@@ -93,6 +93,7 @@
 </head>
 <body>
 
+<div id="siteHeader"></div>
 <header>
   <h1>Annual Curricular Plan</h1>
   <a class="back" href="index.html">&larr; Dashboard</a>
@@ -196,6 +197,9 @@ const printBtn = document.getElementById('printBtn');
 
 async function init() {
   try {
+    await renderSiteHeader('siteHeader');
+    document.getElementById('phLine3').textContent = DEPARTMENT_NAME;
+
     const [classes, semesters, configRows] = await Promise.all([apiGet('classes'), apiGet('semesters'), apiGet('config')]);
     allClasses = classes;
     allSemesters = semesters;
@@ -208,9 +212,6 @@ async function init() {
     if (config['Institution Name']) {
       document.getElementById('phLine2').textContent = config['Institution Name'];
     }
-    // Header 3 ("Department of Mathematics") has no Config sheet equivalent yet —
-    // edit the hardcoded text in the HTML above, or add a "Department Name" row
-    // to Config and fetch it here the same way, if you want it configurable too.
 
     wireClassCascade({
       yearSelect, semSelect, classSelect, classes,

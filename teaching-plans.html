@@ -3,130 +3,166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACADEMIC DASHBOARD</title>
-
+<title>My Teaching Plans — Academic Dashboard</title>
 <style>
-:root {
-  --primary: #1f4e79;
-  --secondary: #2f75b5;
-  --light: #f4f7fb;
-  --white: #ffffff;
-  --text: #1f2937;
-  --border: #dbe3ee;
-}
-* { box-sizing: border-box; }
-body { margin: 0; font-family: Arial, sans-serif; background: var(--light); color: var(--text); }
-
-/* QUICK LINKS */
-.quick-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 18px; background: white; }
-.quick-links button {
-  border: none; background: var(--primary); color: white; padding: 10px 18px;
-  border-radius: 25px; cursor: pointer; font-size: 14px;
-}
-.quick-links button:hover { opacity: 0.9; }
-
-/* MAIN CONTAINER */
-.main-container { max-width: 1200px; margin: auto; padding: 30px 20px; }
-.section-title { text-align: center; margin-bottom: 25px; color: var(--primary); }
-
-/* DASHBOARD */
-.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
-.card {
-  background: white; padding: 25px; border-radius: 15px; border: 1px solid var(--border);
-  cursor: pointer; transition: 0.2s; text-align: center; text-decoration: none; display: block; color: inherit;
-}
-.card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.10); }
-.card-icon { font-size: 40px; margin-bottom: 12px; }
-.card h3 { margin: 5px 0 8px; color: var(--primary); }
-.card p { font-size: 14px; margin: 0; color: #666; }
-.card.disabled { opacity: 0.6; cursor: default; }
-
-/* STATUS */
-.status { text-align: center; padding: 10px; font-size: 13px; color: #666; }
-
-
+  :root {
+    --navy: #1f4468; --navy-dark: #16324c; --bg: #eef2f6; --card: #ffffff;
+    --border: #dbe3ee; --text: #24313f; --muted: #64748b; --accent: #2f6690;
+    --err: #b0392f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-dark)); color: #fff;
+    padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+  header a.back {
+    color: #dce8f5; text-decoration: none; font-size: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 999px;
+  }
+  header a.back:hover { background: rgba(255,255,255,0.12); }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 14px; font-size: 1.05rem; color: var(--navy); }
+  .selectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; align-items: end; }
+  .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  select, a.open-drive { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.9rem; background: #fff; color: var(--text); }
+  a.open-drive { display: inline-block; width: auto; text-decoration: none; background: var(--accent); color: #fff; border: none; font-weight: 600; padding: 9px 16px; }
+  a.open-drive:hover { background: var(--navy); }
+  .status { margin-top: 12px; font-size: 0.88rem; min-height: 1.2em; }
+  .status.err { color: var(--err); }
+  .viewer-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+  iframe.plan-frame { width: 100%; height: 75vh; border: none; display: block; }
+  .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 0.92rem; }
+  .toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
 </style>
 </head>
-
 <body>
 
 <div id="siteHeader"></div>
+<header>
+  <h1>My Teaching Plans</h1>
+  <a class="back" href="index.html">&larr; Dashboard</a>
+</header>
 
-<!-- QUICK LINKS -->
-<div class="quick-links">
-  <button onclick="openLink('website')">🌐 My Website</button>
-  <button onclick="openLink('profile')">👤 My Profile</button>
-  <button onclick="openLink('learning')">📚 Learning Materials</button>
-</div>
+<main>
 
-<!-- DASHBOARD -->
-<div class="main-container">
-  <h2 class="section-title">Academic Management</h2>
+  <section class="panel">
+    <h2>Choose paper</h2>
+    <div class="selectors">
+      <div class="field"><label>Semester</label><select id="semester" disabled><option>Loading…</option></select></div>
+      <div class="field"><label>Paper</label><select id="paper" disabled><option>Select semester first</option></select></div>
+      <div class="field"><label>Unit</label><select id="unit" disabled><option>Select paper first</option></select></div>
+    </div>
+    <div id="status" class="status"></div>
+  </section>
 
-  <div class="dashboard-grid">
+  <section class="panel" id="viewerPanel" style="display:none;">
+    <div class="toolbar">
+      <a class="open-drive" id="openDriveLink" href="#" target="_blank" rel="noopener">Open in Google Drive ↗</a>
+    </div>
+    <div class="viewer-wrap">
+      <iframe class="plan-frame" id="planFrame" src="" allow="autoplay"></iframe>
+    </div>
+  </section>
 
-    <a class="card" href="timetable.html">
-      <div class="card-icon">📅</div>
-      <h3>My Timetables</h3>
-      <p>Create and manage your weekly timetable.</p>
-    </a>
+  <div id="emptyMsg" class="empty">Select a Semester, Paper and Unit to view its teaching plan.</div>
 
-    <a class="card" href="annual-plan.html">
-      <div class="card-icon">📘</div>
-      <h3>My Curricular Plans</h3>
-      <p>Generate and manage your annual curricular plan.</p>
-    </a>
+</main>
 
-    <a class="card" href="teaching-diary.html">
-      <div class="card-icon">📖</div>
-      <h3>My Teaching Diaries</h3>
-      <p>Automatically maintain daily teaching records.</p>
-    </a>
-
-    <a class="card" href="attendance.html">
-      <div class="card-icon">👥</div>
-      <h3>Attendance</h3>
-      <p>Record and manage student attendance.</p>
-    </a>
-
-    <a class="card" href="teaching-plans.html">
-      <div class="card-icon">📘</div>
-      <h3>My Teaching Plans</h3>
-      <p>View lesson plans by semester, paper and unit.</p>
-    </a>
-
-  </div>
-</div>
-
-<!-- STATUS -->
 <script src="common.js"></script>
 <script>
-function openLink(type) {
+let allPlans = [];
 
-  const links = {
+const semesterSelect = document.getElementById('semester');
+const paperSelect = document.getElementById('paper');
+const unitSelect = document.getElementById('unit');
+const statusEl = document.getElementById('status');
+const viewerPanel = document.getElementById('viewerPanel');
+const emptyMsg = document.getElementById('emptyMsg');
+const planFrame = document.getElementById('planFrame');
+const openDriveLink = document.getElementById('openDriveLink');
 
-    website: "https://sites.google.com/view/mathmouli/academics",
+async function init() {
+  try {
+    await renderSiteHeader('siteHeader');
+    allPlans = await apiGet('teachingPlans');
 
-    profile: "https://sites.google.com/view/mathmouli/about-me/my-profile",
+    if (allPlans.length === 0) {
+      statusEl.textContent = 'The Teaching Plans sheet is empty — add rows there first (Semester, Paper Name, Unit, Drive File ID).';
+      statusEl.className = 'status err';
+      return;
+    }
 
-    learning: "https://sites.google.com/view/mathmouli/learning-material"
+    const semesters = [...new Set(allPlans.map(p => p['Semester']))].filter(s => s !== '' && s != null)
+      .sort((a, b) => Number(a) - Number(b));
+    setSelectOptions(semesterSelect, semesters.map(s => ({ value: s, label: 'Semester ' + s })), 'Select Semester');
+    semesterSelect.disabled = false;
+  } catch (err) {
+    statusEl.textContent = 'Could not load Teaching Plans: ' + err.message;
+    statusEl.className = 'status err';
+  }
+}
 
-  };
+semesterSelect.addEventListener('change', () => {
+  const semester = semesterSelect.value;
+  setSelectOptions(unitSelect, [], 'Select paper first');
+  hideViewer();
+  if (!semester) { setSelectOptions(paperSelect, [], 'Select semester first'); return; }
 
-  if (!links[type]) {
-    alert("This link has not been configured yet.");
+  const papers = [...new Set(
+    allPlans.filter(p => String(p['Semester']) === String(semester)).map(p => p['Paper Name'])
+  )].filter(Boolean).sort();
+  setSelectOptions(paperSelect, papers.map(p => ({ value: p, label: p })), 'Select Paper');
+});
+
+paperSelect.addEventListener('change', () => {
+  const semester = semesterSelect.value, paper = paperSelect.value;
+  hideViewer();
+  if (!paper) { setSelectOptions(unitSelect, [], 'Select paper first'); return; }
+
+  const units = allPlans
+    .filter(p => String(p['Semester']) === String(semester) && p['Paper Name'] === paper)
+    .map(p => p['Unit'])
+    .filter(u => u !== '' && u != null)
+    .sort((a, b) => Number(a) - Number(b) || String(a).localeCompare(String(b)));
+  setSelectOptions(unitSelect, units.map(u => ({ value: u, label: 'Unit ' + u })), 'Select Unit');
+});
+
+unitSelect.addEventListener('change', () => {
+  const semester = semesterSelect.value, paper = paperSelect.value, unit = unitSelect.value;
+  if (!unit) { hideViewer(); return; }
+
+  const match = allPlans.find(p =>
+    String(p['Semester']) === String(semester) &&
+    p['Paper Name'] === paper &&
+    String(p['Unit']) === String(unit)
+  );
+
+  if (!match || !match['Drive File ID']) {
+    statusEl.textContent = 'No teaching plan has been uploaded yet for this unit.';
+    statusEl.className = 'status err';
+    hideViewer();
     return;
   }
 
-  window.open(links[type], "_blank");
+  statusEl.textContent = '';
+  const fileId = String(match['Drive File ID']).trim();
+  planFrame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+  openDriveLink.href = `https://drive.google.com/file/d/${fileId}/view`;
+  viewerPanel.style.display = 'block';
+  emptyMsg.style.display = 'none';
+});
 
+function hideViewer() {
+  viewerPanel.style.display = 'none';
+  emptyMsg.style.display = 'block';
+  planFrame.src = '';
 }
 
-function openModule(module) {
-  alert(module.replace("-", " ").toUpperCase() + " module is coming soon.");
-}
-
-renderSiteHeader('siteHeader');
+init();
 </script>
 
 </body>

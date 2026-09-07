@@ -49,7 +49,7 @@ const SITE_HEADER_HTML = `
       <img class="personal-photo" src="profile.jpg" alt="My Photo">
       <div>
         <h1 class="personal-name">A. CHANDRA MOULI</h1>
-        <p class="dashboard-title">Academic Dashboard</p>
+        <p class="dashboard-title">ACADEMIC DASHBOARD</p>
       </div>
       <img class="personal-logo" src="personal-logo.png" alt="Personal Logo">
     </div>
@@ -131,11 +131,21 @@ async function apiGet(action, params = {}) {
   return json.data;
 }
 
+function getAdminSecret() {
+  let secret = localStorage.getItem('dashboardAdminSecret');
+  if (!secret) {
+    secret = prompt('Enter the edit password to save changes:') || '';
+    if (secret) localStorage.setItem('dashboardAdminSecret', secret);
+  }
+  return secret;
+}
+
 async function apiPost(body) {
+  const payload = Object.assign({}, body, { adminSecret: getAdminSecret() });
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
-    body: JSON.stringify(body)
+    body: JSON.stringify(payload)
   });
   let json;
   try {
@@ -143,7 +153,13 @@ async function apiPost(body) {
   } catch (err) {
     throw new Error('The backend did not return valid data — it may be temporarily overloaded (too many requests at once) or needs reauthorizing. Wait a few seconds and try again.');
   }
-  if (!json.success) throw new Error(json.error || 'Request failed');
+  if (!json.success) {
+    if (json.error === 'UNAUTHORIZED') {
+      localStorage.removeItem('dashboardAdminSecret'); // so the next save attempt re-prompts
+      throw new Error('Incorrect edit password. Try saving again to re-enter it.');
+    }
+    throw new Error(json.error || 'Request failed');
+  }
   return json.data;
 }
 

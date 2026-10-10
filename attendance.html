@@ -213,12 +213,10 @@ async function init() {
 
     // renderSiteHeader already fetched Config and populated these values.
     // Reuse them instead of making a second Config request.
-    const commissionerate = document.getElementById('siteCommissionerateName')?.textContent?.trim();
-    const institution = document.getElementById('siteInstitutionName')?.textContent?.trim();
-    if (commissionerate) document.getElementById('rPhLine1').textContent = commissionerate;
-    if (institution && institution !== 'Loading...') {
-      document.getElementById('rPhLine2').textContent = institution;
-    }
+    // The shared header loads institutional text asynchronously; set print
+    // letterhead defaults here without delaying the visible banner.
+    document.getElementById('rPhLine1').textContent = 'Commissionerate of Higher Education AP';
+    document.getElementById('rPhLine2').textContent = 'Government Degree College, Vizianagaram';
     document.getElementById('rPhLine3').textContent = DEPARTMENT_NAME;
 
     wireClassCascade({

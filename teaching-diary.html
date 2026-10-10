@@ -68,53 +68,51 @@
   .print-letterhead { display: none; }
   .print-signatures { display: none; }
 
-  /* Keep the repeating letterhead and signatures inside the reserved page margins. */
-  @page { size: landscape; margin: 34mm 8mm 27mm 8mm; }
+  @page { size: landscape; margin: 10mm 8mm 12mm 8mm; }
   @media print {
     header, .selectors, .toolbar, .save-row, .no-print, #siteHeader { display: none !important; }
     body { background: #fff; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .panel { border: none; padding: 0; margin: 0; }
     main { padding: 0; margin: 0; max-width: none; }
     #diaryPanel { display: block !important; padding: 0; margin: 0; }
-
-    .print-letterhead {
-      display: flex; position: fixed; top: -30mm; left: 0; right: 0;
-      align-items: center; justify-content: space-between; gap: 10px;
-      height: 26mm; padding: 0 2mm 3mm; background: #fff;
-      border-bottom: 1.5px solid #000; text-align: center;
-    }
-    .print-letterhead .ph-logo {
-      display: block; width: 22mm; height: 22mm; object-fit: contain; flex: 0 0 22mm;
-    }
-    .print-letterhead .ph-center { flex: 1 1 auto; min-width: 0; }
-    .print-letterhead .ph-line1 { font-size: 9px; line-height: 1.15; }
-    .print-letterhead .ph-line2 { font-size: 15px; line-height: 1.2; font-weight: 700; margin: 2px 0; }
-    .print-letterhead .ph-line3 { font-size: 10px; line-height: 1.15; }
-    .print-letterhead .ph-line4 { font-size: 10px; line-height: 1.15; font-weight: 600; margin-top: 3px; text-decoration: underline; }
-
-    .print-signatures {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      position: fixed; bottom: -23mm; left: 0; right: 0;
-      background: #fff; padding-top: 4px; border-top: 1px solid #000;
-    }
-    .print-signatures .sig-block { width: 30%; text-align: center; font-size: 9px; }
-    .print-signatures .sig-line { border-top: 1px solid #000; margin-bottom: 3px; height: 18px; }
-
     #diaryPanel > h2 { display: none !important; }
+
     table.diary {
       width: 100% !important; table-layout: fixed; border-collapse: collapse;
       font-size: 8px; page-break-inside: auto;
     }
     table.diary th, table.diary td {
-      border: 1px solid #000 !important; padding: 3px 3px;
+      border: 1px solid #000 !important; padding: 3px 2px;
       vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: normal;
+      min-width: 0 !important;
+    }
+    #printFlatTable table.diary th[style], #printFlatTable table.diary td[style] {
+      min-width: 0 !important;
     }
     table.diary th { font-size: 7.5px; line-height: 1.15; }
     table.diary tr { break-inside: avoid !important; page-break-inside: avoid !important; }
     table.diary thead { display: table-header-group; }
     table.diary tfoot { display: table-footer-group; }
+
     #dateGroups { display: none !important; }
     #printFlatTable { display: block !important; width: 100%; }
+    #printFlatTable table.diary .print-brand-row th {
+      padding: 0 2mm 2mm !important; border: none !important; border-bottom: 1.5px solid #000 !important;
+    }
+    .print-brand {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; min-height: 23mm; text-align: center;
+    }
+    .print-brand .ph-logo {
+      display: block; width: 20mm; height: 20mm; object-fit: contain; flex: 0 0 20mm;
+    }
+    .print-brand .ph-center { flex: 1 1 auto; min-width: 0; }
+    .print-brand .ph-line1 { font-size: 9px; line-height: 1.15; }
+    .print-brand .ph-line2 { font-size: 15px; line-height: 1.2; font-weight: 700; margin: 2px 0; }
+    .print-brand .ph-line3 { font-size: 10px; line-height: 1.15; }
+    .print-brand .ph-line4 { font-size: 10px; line-height: 1.15; font-weight: 600; margin-top: 3px; text-decoration: underline; }
+
+    #printFlatTable table.diary .print-brand-row { break-inside: avoid !important; page-break-inside: avoid !important; }
     #printFlatTable table.diary th:nth-child(1), #printFlatTable table.diary td:nth-child(1) { width: 4%; text-align: center; }
     #printFlatTable table.diary th:nth-child(2), #printFlatTable table.diary td:nth-child(2) { width: 7%; white-space: nowrap; }
     #printFlatTable table.diary th:nth-child(3), #printFlatTable table.diary td:nth-child(3) { width: 8%; }
@@ -127,6 +125,14 @@
     #printFlatTable table.diary th:nth-child(10), #printFlatTable table.diary td:nth-child(10) { width: 8%; }
     #printFlatTable table.diary th:nth-child(11), #printFlatTable table.diary td:nth-child(11) { width: 8%; }
     #printFlatTable table.diary th:nth-child(12), #printFlatTable table.diary td:nth-child(12) { width: 7%; }
+
+    .print-signatures {
+      display: flex !important; position: static !important; justify-content: space-between;
+      align-items: flex-end; margin-top: 10mm; padding-top: 4px;
+      border-top: 1px solid #000; background: #fff; break-inside: avoid; page-break-inside: avoid;
+    }
+    .print-signatures .sig-block { width: 30%; text-align: center; font-size: 9px; }
+    .print-signatures .sig-line { border-top: 1px solid #000; margin-bottom: 3px; height: 18px; }
   }
 </style>
 </head>
@@ -156,14 +162,10 @@
 
   <section class="panel" id="diaryPanel" style="display:none;">
     <div class="print-letterhead">
-      <img class="ph-logo" src="logo1.png" alt="Government Degree College logo">
-      <div class="ph-center">
-        <div class="ph-line1" id="phLine1">Commissionerate of Higher Education AP</div>
-        <div class="ph-line2" id="phLine2">Government Degree College, Vizianagaram</div>
-        <div class="ph-line3" id="phLine3">Department of Mathematics</div>
-        <div class="ph-line4" id="phLine4">Teaching Diary for the Academic Year ______</div>
-      </div>
-      <img class="ph-logo" src="logo2.png" alt="Commissionerate logo">
+      <div class="ph-line1" id="phLine1">Commissionerate of Higher Education AP</div>
+      <div class="ph-line2" id="phLine2">Government Degree College, Vizianagaram</div>
+      <div class="ph-line3" id="phLine3">Department of Mathematics</div>
+      <div class="ph-line4" id="phLine4">Teaching Diary for the Academic Year ______</div>
     </div>
     <h2>Diary</h2>
     <div class="toolbar no-print">
@@ -574,7 +576,7 @@ window.addEventListener('beforeprint', () => {
     const date = groupEl.dataset.date, day = groupEl.dataset.day;
     groupEl.querySelectorAll('table.diary tbody tr').forEach(tr => {
       rows.push({
-        sno: sno++, date, day,
+        date, day,
         className: tr.children[0].textContent.trim(),
         periodTime: tr.querySelector('.f-periodtime').textContent.trim(),
         type: tr.querySelector('.f-type').textContent.trim(),
@@ -594,17 +596,39 @@ window.addEventListener('beforeprint', () => {
     return;
   }
 
-  // Matches the official paper register's columns exactly — no Medium column there.
-  let html = `<table class="diary"><thead><tr>
-    <th>Sl.No</th><th>Date</th><th>Day</th><th>Class</th><th>Period</th>
-    <th>Theory/<br>Practical</th><th style="min-width:180px;">Topic Covered</th>
-    <th style="min-width:140px;">Methodology<br>Adopted</th><th>No. of<br>Students</th>
-    <th style="min-width:120px;">Teaching Aids<br>Used</th><th style="min-width:120px;">Student<br>Activity</th>
-    <th style="min-width:100px;">Remarks</th>
-  </tr></thead><tbody>`;
+  // Assign serial numbers only after the complete set of printable rows is collected.
+  // This guarantees one continuous sequence across dates and page breaks.
+  rows.forEach((row, index) => { row.sno = index + 1; });
+
+  // Institutional header is part of THEAD, so it repeats with the column headings.
+  // This avoids fixed-position headers drifting into the table on later pages.
+  const phLine1 = document.getElementById('phLine1').textContent;
+  const phLine2 = document.getElementById('phLine2').textContent;
+  const phLine3 = document.getElementById('phLine3').textContent;
+  const phLine4 = document.getElementById('phLine4').textContent;
+  let html = `<table class="diary"><thead>
+    <tr class="print-brand-row"><th colspan="12">
+      <div class="print-brand">
+        <img class="ph-logo" src="logo1.png" alt="Government Degree College logo">
+        <div class="ph-center">
+          <div class="ph-line1">${escapeHtml(phLine1)}</div>
+          <div class="ph-line2">${escapeHtml(phLine2)}</div>
+          <div class="ph-line3">${escapeHtml(phLine3)}</div>
+          <div class="ph-line4">${escapeHtml(phLine4)}</div>
+        </div>
+        <img class="ph-logo" src="logo2.png" alt="Commissionerate logo">
+      </div>
+    </th></tr>
+    <tr>
+      <th>Sl.No</th><th>Date</th><th>Day</th><th>Class</th><th>Period</th>
+      <th>Theory/<br>Practical</th><th style="min-width:180px;">Topic Covered</th>
+      <th style="min-width:140px;">Methodology<br>Adopted</th><th>No. of<br>Students</th>
+      <th style="min-width:120px;">Teaching Aids<br>Used</th><th style="min-width:120px;">Student<br>Activity</th>
+      <th style="min-width:100px;">Remarks</th>
+    </tr></thead><tbody>`;
   rows.forEach(r => {
     html += `<tr>
-      <td class="print-sno">${r.sno}</td><td class="print-date">${escapeHtml(r.date)}</td><td>${escapeHtml(r.day)}</td>
+      <td>${r.sno}</td><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.day)}</td>
       <td>${escapeHtml(r.className)}</td><td>${escapeHtml(r.periodTime)}</td>
       <td>${escapeHtml(r.type)}</td><td>${escapeHtml(r.topic)}</td>
       <td>${escapeHtml(r.methodology)}</td><td>${escapeHtml(r.studentsAttended)}</td>

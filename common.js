@@ -7,74 +7,142 @@ const DEPARTMENT_NAME = 'Department of Mathematics';
 
 const SITE_HEADER_CSS = `
 <style>
-  .institution-header { background:#fff; padding:12px 20px; border-bottom:1px solid #dbe3ee; }
-  .institution-content { max-width:1200px; margin:auto; display:grid; grid-template-columns:90px 1fr 90px; align-items:center; gap:15px; text-align:center; }
-  .institution-logo { width:70px; height:70px; object-fit:contain; margin:auto; }
-  .institution-details h2 { margin:0; font-size:20px; color:#1f4e79; }
-  .institution-details p { margin:4px 0; font-size:14px; }
-  .personal-header { background:linear-gradient(135deg,#1f4e79,#2f75b5); color:#fff; padding:25px 20px; }
-  .personal-content { max-width:900px; margin:auto; display:grid; grid-template-columns:110px 1fr 110px; align-items:center; text-align:center; }
-  .personal-photo, .personal-logo { width:90px; height:90px; object-fit:cover; background:#fff; border:3px solid #fff; }
-  .personal-photo { border-radius:50%; }
-  .personal-logo { border-radius:15px; }
-  .personal-name { margin:0; font-size:28px; }
-  .dashboard-title { margin:7px 0 0; font-size:18px; font-weight:normal; }
-  @media (max-width:600px) {
-    .institution-content { grid-template-columns:60px 1fr 60px; }
-    .institution-logo { width:50px; height:50px; }
-    .institution-details h2 { font-size:15px; }
-    .institution-details p { font-size:11px; }
-    .personal-content { grid-template-columns:75px 1fr 75px; }
-    .personal-photo, .personal-logo { width:65px; height:65px; }
-    .personal-name { font-size:20px; }
-    .dashboard-title { font-size:15px; }
+  .site-banner {
+    position:relative; overflow:hidden; color:#082f63;
+    background:
+      radial-gradient(circle at 8% 20%, rgba(255,255,255,.9) 0 1px, transparent 2px) 0 0/12px 12px,
+      linear-gradient(115deg, #d8efff 0%, #f8fcff 45%, #d9efff 100%);
+    border-bottom:4px solid #176ac0;
+    isolation:isolate;
   }
-  @media print { .institution-header, .personal-header { display:none !important; } }
+  .site-banner::before, .site-banner::after {
+    content:""; position:absolute; left:-4%; right:-4%; height:65px; z-index:-1;
+    border-radius:50%; pointer-events:none;
+  }
+  .site-banner::before {
+    bottom:-35px; background:linear-gradient(90deg,#0865c4,#43b6ef,#0865c4);
+    transform:rotate(-1deg);
+  }
+  .site-banner::after {
+    bottom:-48px; height:48px; background:#f4c343;
+    transform:rotate(1deg);
+  }
+  .site-banner-grid {
+    position:relative; max-width:1600px; margin:0 auto; padding:16px 20px 22px;
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:center;
+  }
+  .site-banner-cell {
+    min-width:0; min-height:132px; padding:0 16px; display:flex; align-items:center;
+    justify-content:center; gap:12px; text-align:center; box-sizing:border-box;
+  }
+  .site-banner-cell + .site-banner-cell { border-left:1px solid rgba(14,82,145,.35); }
+  .site-banner img { display:block; flex:0 0 auto; object-fit:contain; }
+  .site-logo { width:88px; height:88px; }
+  .site-college-cell { flex-direction:column; gap:5px; }
+  .site-college-copy h2 { margin:0; font-size:clamp(13px,1.35vw,22px); line-height:1.12; font-weight:800; color:#0a356c; }
+  .site-college-copy .site-city { margin-top:4px; font-size:clamp(12px,1.15vw,18px); font-weight:700; color:#176ac0; }
+  .site-college-copy .site-commissionerate { margin-top:6px; font-size:clamp(10px,.92vw,14px); line-height:1.25; }
+  .site-commissionerate-cell { flex-direction:column; gap:5px; }
+  .site-commissionerate-cell .site-logo { width:82px; height:82px; }
+  .site-image-caption { margin:0; font-size:12px; font-weight:600; line-height:1.15; color:#123f75; }
+  .site-profile-cell { flex-direction:column; gap:5px; }
+  .site-profile { width:76px; height:76px; border-radius:50%; border:3px solid #1474d4; background:#fff; }
+  .site-personal-name { margin:0; font-size:clamp(14px,1.25vw,21px); line-height:1.15; font-weight:800; color:#0a356c; }
+  .site-dashboard-title { margin:3px 0 0; font-size:clamp(11px,.95vw,15px); color:#123f75; }
+  .site-personal-logo { width:78px; height:78px; border-radius:14px; background:#fff; }
+  .site-personal-cell { flex-direction:column; gap:5px; }
+  .site-logo-fallback { background:rgba(255,255,255,.72); border:1px dashed #7aa8d8; border-radius:12px; }
+  @media (max-width:900px) {
+    .site-banner-grid { padding:12px 8px 20px; }
+    .site-banner-cell { padding:0 8px; min-height:115px; gap:7px; }
+    .site-logo { width:66px; height:66px; }
+    .site-commissionerate-cell .site-logo { width:64px; height:64px; }
+    .site-profile { width:60px; height:60px; }
+    .site-personal-logo { width:62px; height:62px; }
+  }
+  @media (max-width:620px) {
+    .site-banner-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding:10px 8px 18px; }
+    .site-banner-cell { min-height:112px; padding:8px 5px; }
+    .site-banner-cell:nth-child(3) { border-left:0; }
+    .site-banner-cell:nth-child(n+3) { border-top:1px solid rgba(14,82,145,.25); }
+    .site-logo { width:56px; height:56px; }
+    .site-commissionerate-cell .site-logo { width:54px; height:54px; }
+    .site-profile { width:52px; height:52px; }
+    .site-personal-logo { width:54px; height:54px; }
+    .site-college-copy h2 { font-size:13px; }
+    .site-college-copy .site-city { font-size:12px; }
+    .site-college-copy .site-commissionerate { font-size:10px; }
+    .site-personal-name { font-size:13px; }
+    .site-dashboard-title, .site-image-caption { font-size:10px; }
+  }
+  @media print { .site-banner { display:none !important; } }
 </style>`;
 
+
 const SITE_HEADER_HTML = `
-  <div class="institution-header">
-    <div class="institution-content">
-      <img id="siteLogo1" class="institution-logo" src="" alt="Logo">
-      <div class="institution-details">
-        <h2 id="siteInstitutionName">Loading...</h2>
-        <p id="siteInstitutionAddress"></p>
-        <p id="siteCommissionerateName"></p>
-      </div>
-      <img id="siteLogo2" class="institution-logo" src="" alt="Logo">
-    </div>
-  </div>
-  <div class="personal-header">
-    <div class="personal-content">
-      <img class="personal-photo" src="profile.jpg" alt="My Photo">
-      <div>
-        <h1 class="personal-name">A. CHANDRA MOULI</h1>
-        <p class="dashboard-title">ACADEMIC DASHBOARD</p>
-      </div>
-      <img class="personal-logo" src="personal-logo.png" alt="Personal Logo">
+  <div class="site-banner">
+    <div class="site-banner-grid">
+      <section class="site-banner-cell site-college-cell">
+        <img class="site-logo site-logo-fallback" src="logo1.png" alt="College Logo"
+             onerror="this.style.visibility='hidden';" fetchpriority="high" decoding="async">
+        <div class="site-college-copy">
+          <h2 id="siteInstitutionName">GOVERNMENT DEGREE COLLEGE</h2>
+          <div class="site-city" id="siteInstitutionAddress">VIZIANAGARAM</div>
+          <div class="site-commissionerate" id="siteCommissionerateName">Commissionerate of Higher Education AP</div>
+        </div>
+      </section>
+      <section class="site-banner-cell site-commissionerate-cell">
+        <img class="site-logo site-logo-fallback" src="logo2.png" alt="Commissionerate Logo"
+             onerror="this.style.visibility='hidden';" fetchpriority="high" decoding="async">
+        <p class="site-image-caption">Commissionerate Logo</p>
+      </section>
+      <section class="site-banner-cell site-profile-cell">
+        <img class="site-profile" src="profile.jpg" alt="Profile photograph"
+             onerror="this.style.visibility='hidden';" fetchpriority="high" decoding="async">
+        <div>
+          <h1 class="site-personal-name">A. CHANDRA MOULI</h1>
+          <p class="site-dashboard-title">ACADEMIC DASHBOARD</p>
+        </div>
+      </section>
+      <section class="site-banner-cell site-personal-cell">
+        <img class="site-personal-logo" src="personal-logo.png" alt="Personal / Department Logo"
+             onerror="this.style.visibility='hidden';" fetchpriority="high" decoding="async">
+        <p class="site-image-caption">Personal / Department Logo</p>
+      </section>
     </div>
   </div>`;
 
-/**
- * Injects the standard institution+personal header into the given container
- * and fills in the institution details from the Config sheet. Call this once
- * per page, sequentially with other init calls (it makes one 'config' request).
- */
+
 async function renderSiteHeader(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
+
+  // Render the complete banner immediately. All four images are static assets
+  // on GitHub Pages, so logo loading does not wait for the Google Sheets API.
   el.innerHTML = SITE_HEADER_CSS + SITE_HEADER_HTML;
+
+  // Load editable institutional text in the background; this does not control
+  // image URLs or block the rest of the page from initializing.
   try {
     const configRows = await apiGet('config');
     const config = {};
     configRows.forEach(row => { config[row.Setting] = row.Value; });
-    if (config['Institution Name']) document.getElementById('siteInstitutionName').textContent = config['Institution Name'];
-    if (config['Institution Address']) document.getElementById('siteInstitutionAddress').textContent = config['Institution Address'];
-    if (config['Commissionerate / Department Name']) document.getElementById('siteCommissionerateName').textContent = config['Commissionerate / Department Name'];
-    if (config['Logo 1 URL']) document.getElementById('siteLogo1').src = config['Logo 1 URL'];
-    if (config['Logo 2 URL']) document.getElementById('siteLogo2').src = config['Logo 2 URL'];
+
+    const institutionName = document.getElementById('siteInstitutionName');
+    const institutionAddress = document.getElementById('siteInstitutionAddress');
+    const commissionerateName = document.getElementById('siteCommissionerateName');
+
+    if (institutionName && config['Institution Name']) {
+      institutionName.textContent = config['Institution Name'];
+    }
+    if (institutionAddress && config['Institution Address']) {
+      institutionAddress.textContent = config['Institution Address'];
+    }
+    if (commissionerateName && config['Commissionerate / Department Name']) {
+      commissionerateName.textContent = config['Commissionerate / Department Name'];
+    }
   } catch (err) {
-    console.error('Could not load Config for site header:', err);
+    console.error('Could not load institutional text from Config; static banner text remains visible:', err);
   }
 }
 

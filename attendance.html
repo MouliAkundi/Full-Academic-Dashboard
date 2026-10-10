@@ -201,18 +201,23 @@ rToDate.value = todayStr();
 
 async function init() {
   try {
-    await renderSiteHeader('siteHeader');
-    allClasses = await apiGet('classes');
-    allSemesters = await apiGet('semesters');
+    // These requests do not depend on one another; start them together.
+    const [, classes, semesters] = await Promise.all([
+      renderSiteHeader('siteHeader'),
+      apiGet('classes'),
+      apiGet('semesters')
+    ]);
 
-    const configRows = await apiGet('config');
-    const config = {};
-    configRows.forEach(row => { config[row.Setting] = row.Value; });
-    if (config['Commissionerate / Department Name']) {
-      document.getElementById('rPhLine1').textContent = config['Commissionerate / Department Name'];
-    }
-    if (config['Institution Name']) {
-      document.getElementById('rPhLine2').textContent = config['Institution Name'];
+    allClasses = classes;
+    allSemesters = semesters;
+
+    // renderSiteHeader already fetched Config and populated these values.
+    // Reuse them instead of making a second Config request.
+    const commissionerate = document.getElementById('siteCommissionerateName')?.textContent?.trim();
+    const institution = document.getElementById('siteInstitutionName')?.textContent?.trim();
+    if (commissionerate) document.getElementById('rPhLine1').textContent = commissionerate;
+    if (institution && institution !== 'Loading...') {
+      document.getElementById('rPhLine2').textContent = institution;
     }
     document.getElementById('rPhLine3').textContent = DEPARTMENT_NAME;
 
@@ -251,16 +256,26 @@ loadRosterBtn.addEventListener('click', async () => {
   loadRosterBtn.disabled = true;
 
   try {
-    if (calendarRows.length === 0 || calendarRows._year !== academicYear + semester) {
-      calendarRows = await apiGet('calendar', { academicYear, semester });
+    const calendarIsCached = calendarRows.length > 0 && calendarRows._year === academicYear + semester;
+    const calendarPromise = calendarIsCached
+      ? Promise.resolve(calendarRows)
+      : apiGet('calendar', { academicYear, semester });
+    const attendancePromise = apiGet('attendanceRange', {
+      academicYear, semester, classId, from: date, to: date
+    });
+
+    // Fetch calendar and selected-date attendance concurrently.
+    const [loadedCalendar, existing] = await Promise.all([calendarPromise, attendancePromise]);
+    if (!calendarIsCached) {
+      calendarRows = loadedCalendar;
       calendarRows._year = academicYear + semester;
     }
+
     const students = classRowsFor(classId, allClasses)
       .map(c => ({ rollNo: String(c['Student Roll No.']), name: c['Student Name'] }))
       .sort((a, b) => Number(a.rollNo) - Number(b.rollNo));
     currentRoster = students;
 
-    const existing = await apiGet('attendanceRange', { academicYear, semester, classId, from: date, to: date });
     existingAttendanceForDate = existing.length > 0 ? existing[0] : null;
 
     const classRow = allClasses.find(c => String(c['Class ID']) === String(classId));
@@ -386,9 +401,12 @@ loadReportBtn.addEventListener('click', async () => {
   loadReportBtn.disabled = true;
 
   try {
-    const rCalendar = await apiGet('calendar', { academicYear, semester });
-    const attRows = await apiGet('attendanceRange', { academicYear, semester, classId, from, to });
-    const detailRows = await apiGet('attendanceDetailsRange', { academicYear, semester, classId, from, to });
+    // These three reads are independent; avoid waiting for each request in turn.
+    const [rCalendar, attRows, detailRows] = await Promise.all([
+      apiGet('calendar', { academicYear, semester }),
+      apiGet('attendanceRange', { academicYear, semester, classId, from, to }),
+      apiGet('attendanceDetailsRange', { academicYear, semester, classId, from, to })
+    ]);
 
     // Working days actually recorded (attendance was taken) vs. the theoretical
     // total, so gaps in recording are visible rather than silently ignored.
